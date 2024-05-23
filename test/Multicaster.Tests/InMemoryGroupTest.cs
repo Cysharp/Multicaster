@@ -349,8 +349,8 @@ public class InMemoryGroupTest
         group.All.Parameter_Zero();
 
         // Assert
-        Assert.Equal([(nameof(Parameter_Zero), TestReceiver.ParameterZeroArgument)], receiverA.Received);
-        Assert.Equal([(nameof(Parameter_Zero), TestReceiver.ParameterZeroArgument)], receiverB.Received);
+        Assert.Equal([(nameof(ITestReceiver.Parameter_Zero), TestReceiver.ParameterZeroArgument)], receiverA.Received);
+        Assert.Equal([(nameof(ITestReceiver.Parameter_Zero), TestReceiver.ParameterZeroArgument)], receiverB.Received);
     }
 
     [Fact]
@@ -371,8 +371,8 @@ public class InMemoryGroupTest
         group.All.Parameter_One(1234);
 
         // Assert
-        Assert.Equal([(nameof(Parameter_One), (1234))], receiverA.Received);
-        Assert.Equal([(nameof(Parameter_One), (1234))], receiverB.Received);
+        Assert.Equal([(nameof(ITestReceiver.Parameter_One), (1234))], receiverA.Received);
+        Assert.Equal([(nameof(ITestReceiver.Parameter_One), (1234))], receiverB.Received);
     }
 
     [Fact]
@@ -393,8 +393,8 @@ public class InMemoryGroupTest
         group.All.Parameter_Two(1234, "Hello");
 
         // Assert
-        Assert.Equal([(nameof(Parameter_Two), (1234, "Hello"))], receiverA.Received);
-        Assert.Equal([(nameof(Parameter_Two), (1234, "Hello"))], receiverB.Received);
+        Assert.Equal([(nameof(ITestReceiver.Parameter_Two), (1234, "Hello"))], receiverA.Received);
+        Assert.Equal([(nameof(ITestReceiver.Parameter_Two), (1234, "Hello"))], receiverB.Received);
     }
 
     [Fact]
@@ -415,8 +415,8 @@ public class InMemoryGroupTest
         group.All.Parameter_Many(1234, "Hello", true, 9876543210L);
 
         // Assert
-        Assert.Equal([(nameof(Parameter_Many), (1234, "Hello", true, 9876543210L))], receiverA.Received);
-        Assert.Equal([(nameof(Parameter_Many), (1234, "Hello", true, 9876543210L))], receiverB.Received);
+        Assert.Equal([(nameof(ITestReceiver.Parameter_Many), (1234, "Hello", true, 9876543210L))], receiverA.Received);
+        Assert.Equal([(nameof(ITestReceiver.Parameter_Many), (1234, "Hello", true, 9876543210L))], receiverB.Received);
     }
 
     [Fact]
@@ -445,10 +445,40 @@ public class InMemoryGroupTest
         groupB.All.Parameter_Two(4321, "Konnichiwa");
 
         // Assert
-        Assert.Equal([(nameof(Parameter_Many), (1234, "Hello", true, 9876543210L))], receiverA.Received);
-        Assert.Equal([(nameof(Parameter_Many), (1234, "Hello", true, 9876543210L))], receiverB.Received);
-        Assert.Equal([(nameof(Parameter_Two), (4321, "Konnichiwa"))], receiverC.Received);
-        Assert.Equal([(nameof(Parameter_Two), (4321, "Konnichiwa"))], receiverD.Received);
+        Assert.Equal([(nameof(ITestReceiver.Parameter_Many), (1234, "Hello", true, 9876543210L))], receiverA.Received);
+        Assert.Equal([(nameof(ITestReceiver.Parameter_Many), (1234, "Hello", true, 9876543210L))], receiverB.Received);
+        Assert.Equal([(nameof(ITestReceiver.Parameter_Two), (4321, "Konnichiwa"))], receiverC.Received);
+        Assert.Equal([(nameof(ITestReceiver.Parameter_Two), (4321, "Konnichiwa"))], receiverD.Received);
+    }
+
+    [Fact]
+    public void IgnoreExceptions()
+    {
+        // Arrange
+        var receiverA = new TestReceiver();
+        var receiverIdA = Guid.NewGuid();
+        var receiverB = new TestReceiver();
+        var receiverIdB = Guid.NewGuid();
+        var receiverC = new TestReceiver();
+        var receiverIdC = Guid.NewGuid();
+        var receiverD = new TestReceiver();
+        var receiverIdD = Guid.NewGuid();
+
+        IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
+        var groupA = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroupA");
+        groupA.Add(receiverIdA, receiverA);
+        groupA.Add(receiverIdB, receiverB);
+        groupA.Add(receiverIdC, receiverC);
+        groupA.Add(receiverIdD, receiverD);
+
+        // Act
+        var ex = Record.Exception(() => groupA.All.Throw());
+
+        // Assert
+        Assert.Equal([(nameof(ITestReceiver.Throw), TestReceiver.ParameterZeroArgument)], receiverA.Received);
+        Assert.Equal([(nameof(ITestReceiver.Throw), TestReceiver.ParameterZeroArgument)], receiverB.Received);
+        Assert.Equal([(nameof(ITestReceiver.Throw), TestReceiver.ParameterZeroArgument)], receiverC.Received);
+        Assert.Equal([(nameof(ITestReceiver.Throw), TestReceiver.ParameterZeroArgument)], receiverD.Received);
     }
 
     [Fact]
@@ -473,7 +503,7 @@ public class InMemoryGroupTest
 
         // Assert
         Assert.Equal([], receiverA.Received);
-        Assert.Equal([(nameof(Parameter_Many), (1234, "Hello", true, 9876543210L))], receiverB.Received);
+        Assert.Equal([(nameof(ITestReceiver.Parameter_Many), (1234, "Hello", true, 9876543210L))], receiverB.Received);
         Assert.Equal([], receiverC.Received);
     }
 
@@ -498,9 +528,9 @@ public class InMemoryGroupTest
         group.Only([receiverIdA, receiverIdC]).Parameter_Many(1234, "Hello", true, 9876543210L);
 
         // Assert
-        Assert.Equal([(nameof(Parameter_Many), (1234, "Hello", true, 9876543210L))], receiverA.Received);
+        Assert.Equal([(nameof(ITestReceiver.Parameter_Many), (1234, "Hello", true, 9876543210L))], receiverA.Received);
         Assert.Equal([], receiverB.Received);
-        Assert.Equal([(nameof(Parameter_Many), (1234, "Hello", true, 9876543210L))], receiverC.Received);
+        Assert.Equal([(nameof(ITestReceiver.Parameter_Many), (1234, "Hello", true, 9876543210L))], receiverC.Received);
     }
 
     [Fact]
@@ -525,7 +555,7 @@ public class InMemoryGroupTest
 
         // Assert
         Assert.Equal([], receiverA.Received);
-        Assert.Equal([(nameof(Parameter_Many), (1234, "Hello", true, 9876543210L))], receiverB.Received);
+        Assert.Equal([(nameof(ITestReceiver.Parameter_Many), (1234, "Hello", true, 9876543210L))], receiverB.Received);
         Assert.Equal([], receiverC.Received);
     }
 
@@ -553,221 +583,6 @@ public class InMemoryGroupTest
         Assert.Equal([], receiverA.Received);
         Assert.Equal([], receiverB.Received);
         Assert.Equal([], receiverC.Received);
-    }
-
-    [Fact]
-    public async Task ClientInvoke_Parameter_Zero_NoReturnValue()
-    {
-        // Arrange
-        var receiverA = new TestReceiver();
-        var receiverIdA = Guid.NewGuid();
-        var receiverB = new TestReceiver();
-        var receiverIdB = Guid.NewGuid();
-        var receiverC = new TestReceiver();
-        var receiverIdC = Guid.NewGuid();
-        var receiverD = new TestReceiver();
-        var receiverIdD = Guid.NewGuid();
-
-        IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
-        group.Add(receiverIdA, receiverA);
-        group.Add(receiverIdB, receiverB);
-        group.Add(receiverIdC, receiverC);
-        group.Add(receiverIdD, receiverD);
-
-        // Act
-        await group.Single(receiverIdB).ClientInvoke_Parameter_Zero_NoReturnValue();
-
-        // Assert
-        Assert.Equal([], receiverA.Received);
-        Assert.Equal([(nameof(ClientInvoke_Parameter_Zero_NoReturnValue), TestReceiver.ParameterZeroArgument)], receiverB.Received);
-        Assert.Equal([], receiverC.Received);
-        Assert.Equal([], receiverD.Received);
-    }
-
-    [Fact]
-    public async Task ClientInvoke_Parameter_One_NoReturnValue()
-    {
-        // Arrange
-        var receiverA = new TestReceiver();
-        var receiverIdA = Guid.NewGuid();
-        var receiverB = new TestReceiver();
-        var receiverIdB = Guid.NewGuid();
-        var receiverC = new TestReceiver();
-        var receiverIdC = Guid.NewGuid();
-        var receiverD = new TestReceiver();
-        var receiverIdD = Guid.NewGuid();
-
-        IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
-        group.Add(receiverIdA, receiverA);
-        group.Add(receiverIdB, receiverB);
-        group.Add(receiverIdC, receiverC);
-        group.Add(receiverIdD, receiverD);
-
-        // Act
-        await group.Single(receiverIdB).ClientInvoke_Parameter_One_NoReturnValue(1234);
-
-        // Assert
-        Assert.Equal([], receiverA.Received);
-        Assert.Equal([(nameof(ClientInvoke_Parameter_One_NoReturnValue), (1234))], receiverB.Received);
-        Assert.Equal([], receiverC.Received);
-        Assert.Equal([], receiverD.Received);
-    }
-
-    [Fact]
-    public async Task ClientInvoke_Parameter_Many_NoReturnValue()
-    {
-        // Arrange
-        var receiverA = new TestReceiver();
-        var receiverIdA = Guid.NewGuid();
-        var receiverB = new TestReceiver();
-        var receiverIdB = Guid.NewGuid();
-        var receiverC = new TestReceiver();
-        var receiverIdC = Guid.NewGuid();
-        var receiverD = new TestReceiver();
-        var receiverIdD = Guid.NewGuid();
-
-        IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
-        group.Add(receiverIdA, receiverA);
-        group.Add(receiverIdB, receiverB);
-        group.Add(receiverIdC, receiverC);
-        group.Add(receiverIdD, receiverD);
-
-        // Act
-        await group.Single(receiverIdB).ClientInvoke_Parameter_Many_NoReturnValue(1234, "Hello", true, 1234567890L);
-
-        // Assert
-        Assert.Equal([], receiverA.Received);
-        Assert.Equal([(nameof(ClientInvoke_Parameter_Many_NoReturnValue), (1234, "Hello", true, 1234567890L))], receiverB.Received);
-        Assert.Equal([], receiverC.Received);
-        Assert.Equal([], receiverD.Received);
-    }
-
-    [Fact]
-    public async Task ClientInvoke_Parameter_Zero()
-    {
-        // Arrange
-        var receiverA = new TestReceiver();
-        var receiverIdA = Guid.NewGuid();
-        var receiverB = new TestReceiver();
-        var receiverIdB = Guid.NewGuid();
-        var receiverC = new TestReceiver();
-        var receiverIdC = Guid.NewGuid();
-        var receiverD = new TestReceiver();
-        var receiverIdD = Guid.NewGuid();
-
-        IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
-        group.Add(receiverIdA, receiverA);
-        group.Add(receiverIdB, receiverB);
-        group.Add(receiverIdC, receiverC);
-        group.Add(receiverIdD, receiverD);
-
-        // Act
-        var retVal = await group.Single(receiverIdB).ClientInvoke_Parameter_Zero();
-
-        // Assert
-        Assert.Equal($"{nameof(ClientInvoke_Parameter_Zero)}", retVal);
-        Assert.Equal([], receiverA.Received);
-        Assert.Equal([(nameof(ClientInvoke_Parameter_Zero), TestReceiver.ParameterZeroArgument)], receiverB.Received);
-        Assert.Equal([], receiverC.Received);
-        Assert.Equal([], receiverD.Received);
-    }
-
-    [Fact]
-    public async Task ClientInvoke_Parameter_One()
-    {
-        // Arrange
-        var receiverA = new TestReceiver();
-        var receiverIdA = Guid.NewGuid();
-        var receiverB = new TestReceiver();
-        var receiverIdB = Guid.NewGuid();
-        var receiverC = new TestReceiver();
-        var receiverIdC = Guid.NewGuid();
-        var receiverD = new TestReceiver();
-        var receiverIdD = Guid.NewGuid();
-
-        IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
-        group.Add(receiverIdA, receiverA);
-        group.Add(receiverIdB, receiverB);
-        group.Add(receiverIdC, receiverC);
-        group.Add(receiverIdD, receiverD);
-
-        // Act
-        var retVal = await group.Single(receiverIdB).ClientInvoke_Parameter_One(1234);
-
-        // Assert
-        Assert.Equal($"{nameof(ClientInvoke_Parameter_One)}:1234", retVal);
-        Assert.Equal([], receiverA.Received);
-        Assert.Equal([(nameof(ClientInvoke_Parameter_One), (1234))], receiverB.Received);
-        Assert.Equal([], receiverC.Received);
-        Assert.Equal([], receiverD.Received);
-    }
-
-    [Fact]
-    public async Task ClientInvoke_Parameter_Many()
-    {
-        // Arrange
-        var receiverA = new TestReceiver();
-        var receiverIdA = Guid.NewGuid();
-        var receiverB = new TestReceiver();
-        var receiverIdB = Guid.NewGuid();
-        var receiverC = new TestReceiver();
-        var receiverIdC = Guid.NewGuid();
-        var receiverD = new TestReceiver();
-        var receiverIdD = Guid.NewGuid();
-
-        IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
-        group.Add(receiverIdA, receiverA);
-        group.Add(receiverIdB, receiverB);
-        group.Add(receiverIdC, receiverC);
-        group.Add(receiverIdD, receiverD);
-
-        // Act
-        var retVal = await group.Single(receiverIdB).ClientInvoke_Parameter_Many(1234, "Hello", true, 1234567890L);
-
-        // Assert
-        Assert.Equal($"{nameof(ClientInvoke_Parameter_Many)}:1234,Hello,True,1234567890", retVal);
-        Assert.Equal([], receiverA.Received);
-        Assert.Equal([(nameof(ClientInvoke_Parameter_Many), (1234, "Hello", true, 1234567890L))], receiverB.Received);
-        Assert.Equal([], receiverC.Received);
-        Assert.Equal([], receiverD.Received);
-    }
-
-    [Fact]
-    public async Task ClientInvoke_NotSingle()
-    {
-        // Arrange
-        var receiverA = new TestReceiver();
-        var receiverIdA = Guid.NewGuid();
-        var receiverB = new TestReceiver();
-        var receiverIdB = Guid.NewGuid();
-        var receiverC = new TestReceiver();
-        var receiverIdC = Guid.NewGuid();
-        var receiverD = new TestReceiver();
-        var receiverIdD = Guid.NewGuid();
-
-        IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
-        group.Add(receiverIdA, receiverA);
-        group.Add(receiverIdB, receiverB);
-        group.Add(receiverIdC, receiverC);
-        group.Add(receiverIdD, receiverD);
-
-        // Act
-        var ex = await Record.ExceptionAsync(async () => await group.All.ClientInvoke_Parameter_Many(1234, "Hello", true, 1234567890L));
-
-        // Assert
-        Assert.NotNull(ex);
-        Assert.IsType<NotSupportedException>(ex);
-        Assert.Empty(receiverA.Received);
-        Assert.Empty(receiverB.Received);
-        Assert.Empty(receiverC.Received);
-        Assert.Empty(receiverD.Received);
     }
 
     [Fact]
@@ -800,79 +615,6 @@ public class InMemoryGroupTest
             ("System", "Hello"),
             ("System", "Hello without A"),
         ], receiverB.Received);
-    }
-
-    public interface ITestReceiver
-    {
-        void Parameter_Zero();
-        void Parameter_One(int arg1);
-        void Parameter_Two(int arg1, string arg2);
-        void Parameter_Many(int arg1, string arg2, bool arg3, long arg4);
-
-        Task ClientInvoke_Parameter_Zero_NoReturnValue();
-        Task ClientInvoke_Parameter_One_NoReturnValue(int arg1);
-        Task ClientInvoke_Parameter_Many_NoReturnValue(int arg1, string arg2, bool arg3, long arg4);
-        Task<string> ClientInvoke_Parameter_Zero();
-        Task<string> ClientInvoke_Parameter_One(int arg1);
-        Task<string> ClientInvoke_Parameter_Many(int arg1, string arg2, bool arg3, long arg4);
-    }
-
-    public class TestReceiver : ITestReceiver
-    {
-        public static readonly object ParameterZeroArgument = new();
-
-        public List<(string Name, object? Arguments)> Received { get; } = new ();
-        
-        public void Parameter_Zero()
-            => Received.Add((nameof(Parameter_Zero), ParameterZeroArgument));
-
-        public void Parameter_One(int arg1)
-            => Received.Add((nameof(Parameter_One), (arg1)));
-
-        public void Parameter_Two(int arg1, string arg2)
-            => Received.Add((nameof(Parameter_Two), (arg1, arg2)));
-
-        public void Parameter_Many(int arg1, string arg2, bool arg3, long arg4)
-            => Received.Add((nameof(Parameter_Many), (arg1, arg2, arg3, arg4)));
-
-        public async Task ClientInvoke_Parameter_Zero_NoReturnValue()
-        {
-            Received.Add((nameof(ClientInvoke_Parameter_Zero_NoReturnValue), ParameterZeroArgument));
-            await Task.Delay(500);
-        }
-
-        public async Task ClientInvoke_Parameter_One_NoReturnValue(int arg1)
-        {
-            Received.Add((nameof(ClientInvoke_Parameter_One_NoReturnValue), (arg1)));
-            await Task.Delay(500);
-        }
-
-        public async Task ClientInvoke_Parameter_Many_NoReturnValue(int arg1, string arg2, bool arg3, long arg4)
-        {
-            Received.Add((nameof(ClientInvoke_Parameter_Many_NoReturnValue), (arg1, arg2, arg3, arg4)));
-            await Task.Delay(500);
-        }
-
-        public async Task<string> ClientInvoke_Parameter_Zero()
-        {
-            Received.Add((nameof(ClientInvoke_Parameter_Zero), ParameterZeroArgument));
-            await Task.Delay(500);
-            return nameof(ClientInvoke_Parameter_Zero);
-        }
-
-        public async Task<string> ClientInvoke_Parameter_One(int arg1)
-        {
-            Received.Add((nameof(ClientInvoke_Parameter_One), (arg1)));
-            await Task.Delay(500);
-            return $"{nameof(ClientInvoke_Parameter_One)}:{arg1}";
-        }
-
-        public async Task<string> ClientInvoke_Parameter_Many(int arg1, string arg2, bool arg3, long arg4)
-        {
-            Received.Add((nameof(ClientInvoke_Parameter_Many), (arg1, arg2, arg3, arg4)));
-            await Task.Delay(500);
-            return $"{nameof(ClientInvoke_Parameter_Many)}:{arg1},{arg2},{arg3},{arg4}";
-        }
     }
 
     public interface IGreeterReceiver
