@@ -12,9 +12,9 @@ public interface IMulticastGroup<TReceiver>
 
 public interface IMulticastAsyncGroup<TReceiver> : IMulticastGroup<TReceiver>
 {
-    ValueTask AddAsync(Guid key, TReceiver receiver);
-    ValueTask RemoveAsync(Guid key);
-    ValueTask<int> CountAsync();
+    ValueTask AddAsync(Guid key, TReceiver receiver, CancellationToken cancellationToken = default);
+    ValueTask RemoveAsync(Guid key, CancellationToken cancellationToken = default);
+    ValueTask<int> CountAsync(CancellationToken cancellationToken = default);
 }
 
 public interface IMulticastSyncGroup<TReceiver> : IMulticastGroup<TReceiver>

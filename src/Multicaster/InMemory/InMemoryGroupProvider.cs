@@ -48,19 +48,19 @@ internal class InMemoryGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T
         return _proxyFactory.Only(_receivers, ImmutableArray<Guid>.Empty.Add(target));
     }
 
-    public ValueTask AddAsync(Guid key, T receiver)
+    public ValueTask AddAsync(Guid key, T receiver, CancellationToken cancellationToken = default)
     {
         _receivers[key] = receiver;
         return default;
     }
 
-    public ValueTask RemoveAsync(Guid key)
+    public ValueTask RemoveAsync(Guid key, CancellationToken cancellationToken = default)
     {
         _receivers.Remove(key, out _);
         return default;
     }
 
-    public ValueTask<int> CountAsync()
+    public ValueTask<int> CountAsync(CancellationToken cancellationToken = default)
         => ValueTask.FromResult(_receivers.Count);
 
     public void Add(Guid key, T receiver)

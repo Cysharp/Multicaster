@@ -42,19 +42,19 @@ internal class RemoteGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>
         All = _proxyFactory.Create<T>(_receivers, _serializer, _pendingQueue);
     }
 
-    public ValueTask AddAsync(Guid key, T receiver)
+    public ValueTask AddAsync(Guid key, T receiver, CancellationToken cancellationToken = default)
     {
         Add(key, receiver);
         return default;
     }
 
-    public ValueTask RemoveAsync(Guid key)
+    public ValueTask RemoveAsync(Guid key, CancellationToken cancellationToken = default)
     {
         Remove(key);
         return default;
     }
 
-    public ValueTask<int> CountAsync()
+    public ValueTask<int> CountAsync(CancellationToken cancellationToken = default)
         => ValueTask.FromResult(Count());
 
     public void Add(Guid key, T receiver)

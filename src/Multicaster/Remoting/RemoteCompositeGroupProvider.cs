@@ -59,19 +59,19 @@ internal class RemoteCompositeGroup<T> : IMulticastAsyncGroup<T>, IMulticastSync
         return _memoryProxyFactory.Create([KeyValuePair.Create(_memoryGroup.Id, _memoryGroup.Group.Single(target)), KeyValuePair.Create(_remoteGroup.Id, _remoteGroup.Group.Single(target))], ImmutableArray<Guid>.Empty, ImmutableArray<Guid>.Empty.Add(target));
     }
 
-    public ValueTask AddAsync(Guid key, T receiver)
+    public ValueTask AddAsync(Guid key, T receiver, CancellationToken cancellationToken = default)
     {
         Add(key, receiver);
         return default;
     }
 
-    public ValueTask RemoveAsync(Guid key)
+    public ValueTask RemoveAsync(Guid key, CancellationToken cancellationToken = default)
     {
         Remove(key);
         return default;
     }
 
-    public ValueTask<int> CountAsync()
+    public ValueTask<int> CountAsync(CancellationToken cancellationToken = default)
     {
         return ValueTask.FromResult(Count());
     }
