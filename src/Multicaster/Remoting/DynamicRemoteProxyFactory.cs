@@ -54,8 +54,11 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
                     );
                     var methodWrite = typeof(RemoteProxyBase)
                         .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
-                        .Single(x => x.Name == "Invoke" && x.GetGenericArguments().Length == method.GetParameters().Length)
-                        .MakeGenericMethod(method.GetParameters().Select(x => x.ParameterType).ToArray());
+                        .Single(x => x.Name == "Invoke" && x.GetGenericArguments().Length == method.GetParameters().Length);
+                    if (methodWrite.ContainsGenericParameters)
+                    {
+                        methodWrite = methodWrite.MakeGenericMethod(method.GetParameters().Select(x => x.ParameterType).ToArray());
+                    }
 
                     {
                         var il = methodBuilder.GetILGenerator();
@@ -78,10 +81,22 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
                         method.ReturnType,
                         method.GetParameters().Select(x => x.ParameterType).ToArray()
                     );
+                    var isNonGenericTaskOrValueTask = !method.ReturnType.ContainsGenericParameters;
                     var methodInvokeWithResult = typeof(RemoteProxyBase)
                         .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
-                        .Single(x => x.Name == "InvokeWithResult" && x.GetGenericArguments().Length == method.GetParameters().Length + 1)
-                        .MakeGenericMethod([..method.GetParameters().Select(x => x.ParameterType), method.ReturnType.GetGenericArguments()[0]]);
+                        .Single(x => x.Name == "InvokeWithResult" && x.GetGenericArguments().Length == method.GetParameters().Length + (isNonGenericTaskOrValueTask ? 0 : 1));
+
+                    if (methodInvokeWithResult.ContainsGenericParameters)
+                    {
+                        if (isNonGenericTaskOrValueTask)
+                        {
+                            methodInvokeWithResult = methodInvokeWithResult.MakeGenericMethod([.. method.GetParameters().Select(x => x.ParameterType)]);
+                        }
+                        else
+                        {
+                            methodInvokeWithResult = methodInvokeWithResult.MakeGenericMethod([.. method.GetParameters().Select(x => x.ParameterType), method.ReturnType.GetGenericArguments()[0]]);
+                        }
+                    }
 
                     {
                         var il = methodBuilder.GetILGenerator();
@@ -92,7 +107,7 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
                         {
                             il.Emit(OpCodes.Ldarg, 1 + i);
                         }
-                        il.Emit(OpCodes.Callvirt, methodInvokeWithResult); // base.InvokeWithResponse<TArg1, TArg2..., TResult>(method.Name, methodId, arg1, arg2 ...);
+                        il.Emit(OpCodes.Callvirt, methodInvokeWithResult); // base.InvokeWithResult<TArg1, TArg2..., TResult>(method.Name, methodId, arg1, arg2 ...);
                         il.Emit(OpCodes.Ret);
                     }
                 }

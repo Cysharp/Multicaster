@@ -21,231 +21,267 @@ public abstract class RemoteProxyBase : IRemoteProxy
     bool IRemoteProxy.TryGetDirectWriter([NotNullWhen(true)] out IRemoteReceiverWriter? receiver)
         => (receiver = (_writer as RemoteDirectWriter)?.Writer) is not null;
 
-    protected void Invoke<T>(string name, int methodId, T arg1)
+    protected void Invoke(string name, int methodId)
     {
         var writer = new ArrayBufferWriter<byte>();
-        _serializer.SerializeArgument(writer, arg1, new SerializationContext(name, methodId, null));
+        _serializer.SerializeInvocation(writer, new SerializationContext(name, methodId, null));
+        _writer.Write(writer.WrittenMemory);
+    }
+
+    protected void Invoke<T1>(string name, int methodId, T1 arg1)
+    {
+        var writer = new ArrayBufferWriter<byte>();
+        _serializer.SerializeInvocation(writer, arg1, new SerializationContext(name, methodId, null));
         _writer.Write(writer.WrittenMemory);
     }
     protected void Invoke<T1, T2>(string name, int methodId, T1 arg1, T2 arg2)
     {
         var writer = new ArrayBufferWriter<byte>();
-        _serializer.SerializeArgument(writer, arg1, arg2, new SerializationContext(name, methodId, null));
+        _serializer.SerializeInvocation(writer, arg1, arg2, new SerializationContext(name, methodId, null));
         _writer.Write(writer.WrittenMemory);
     }
     protected void Invoke<T1, T2, T3>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3)
     {
         var writer = new ArrayBufferWriter<byte>();
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, new SerializationContext(name, methodId, null));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, new SerializationContext(name, methodId, null));
         _writer.Write(writer.WrittenMemory);
     }
     protected void Invoke<T1, T2, T3, T4>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
     {
         var writer = new ArrayBufferWriter<byte>();
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, new SerializationContext(name, methodId, null));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, new SerializationContext(name, methodId, null));
         _writer.Write(writer.WrittenMemory);
     }
     protected void Invoke<T1, T2, T3, T4, T5>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
     {
         var writer = new ArrayBufferWriter<byte>();
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, arg5, new SerializationContext(name, methodId, null));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, new SerializationContext(name, methodId, null));
         _writer.Write(writer.WrittenMemory);
     }
     protected void Invoke<T1, T2, T3, T4, T5, T6>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
     {
         var writer = new ArrayBufferWriter<byte>();
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, arg5, arg6, new SerializationContext(name, methodId, null));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, new SerializationContext(name, methodId, null));
         _writer.Write(writer.WrittenMemory);
     }
     protected void Invoke<T1, T2, T3, T4, T5, T6, T7>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7)
     {
         var writer = new ArrayBufferWriter<byte>();
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, new SerializationContext(name, methodId, null));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, new SerializationContext(name, methodId, null));
         _writer.Write(writer.WrittenMemory);
     }
     protected void Invoke<T1, T2, T3, T4, T5, T6, T7, T8>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8)
     {
         var writer = new ArrayBufferWriter<byte>();
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, new SerializationContext(name, methodId, null));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, new SerializationContext(name, methodId, null));
         _writer.Write(writer.WrittenMemory);
     }
     protected void Invoke<T1, T2, T3, T4, T5, T6, T7, T8, T9>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9)
     {
         var writer = new ArrayBufferWriter<byte>();
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, new SerializationContext(name, methodId, null));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, new SerializationContext(name, methodId, null));
         _writer.Write(writer.WrittenMemory);
     }
     protected void Invoke<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10)
     {
         var writer = new ArrayBufferWriter<byte>();
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, new SerializationContext(name, methodId, null));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, new SerializationContext(name, methodId, null));
         _writer.Write(writer.WrittenMemory);
     }
     protected void Invoke<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11)
     {
         var writer = new ArrayBufferWriter<byte>();
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, new SerializationContext(name, methodId, null));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, new SerializationContext(name, methodId, null));
         _writer.Write(writer.WrittenMemory);
     }
     protected void Invoke<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12)
     {
         var writer = new ArrayBufferWriter<byte>();
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, new SerializationContext(name, methodId, null));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, new SerializationContext(name, methodId, null));
         _writer.Write(writer.WrittenMemory);
     }
     protected void Invoke<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13)
     {
         var writer = new ArrayBufferWriter<byte>();
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, new SerializationContext(name, methodId, null));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, new SerializationContext(name, methodId, null));
         _writer.Write(writer.WrittenMemory);
     }
     protected void Invoke<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14)
     {
         var writer = new ArrayBufferWriter<byte>();
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, new SerializationContext(name, methodId, null));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, new SerializationContext(name, methodId, null));
         _writer.Write(writer.WrittenMemory);
     }
     protected void Invoke<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15)
     {
         var writer = new ArrayBufferWriter<byte>();
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, new SerializationContext(name, methodId, null));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, new SerializationContext(name, methodId, null));
         _writer.Write(writer.WrittenMemory);
     }
 
-    protected Task<TResult> InvokeWithResponse<T1, TResult>(string name, int methodId, T1 arg1)
+    protected Task InvokeWithResult(string name, int methodId)
     {
         ThrowIfNotSingleWriter();
         var writer = new ArrayBufferWriter<byte>();
-        var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
-        _serializer.SerializeArgument(writer, arg1, new SerializationContext(name, methodId, messageId));
+        var (task, messageId) = EnqueuePendingMessage(name, methodId);
+        _serializer.SerializeInvocation(writer, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
     }
-    protected Task<TResult> InvokeWithResponse<T1, T2, TResult>(string name, int methodId, T1 arg1, T2 arg2)
+
+    protected Task<TResult> InvokeWithResult<TResult>(string name, int methodId)
     {
         ThrowIfNotSingleWriter();
         var writer = new ArrayBufferWriter<byte>();
         var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
-        _serializer.SerializeArgument(writer, arg1, arg2, new SerializationContext(name, methodId, messageId));
+        _serializer.SerializeInvocation(writer, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
     }
-    protected Task<TResult> InvokeWithResponse<T1, T2, T3, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3)
+    protected Task<TResult> InvokeWithResult<T1, TResult>(string name, int methodId, T1 arg1)
     {
         ThrowIfNotSingleWriter();
         var writer = new ArrayBufferWriter<byte>();
         var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, new SerializationContext(name, methodId, messageId));
+        _serializer.SerializeInvocation(writer, arg1, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
     }
-    protected Task<TResult> InvokeWithResponse<T1, T2, T3, T4, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+    protected Task<TResult> InvokeWithResult<T1, T2, TResult>(string name, int methodId, T1 arg1, T2 arg2)
     {
         ThrowIfNotSingleWriter();
         var writer = new ArrayBufferWriter<byte>();
         var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, new SerializationContext(name, methodId, messageId));
+        _serializer.SerializeInvocation(writer, arg1, arg2, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
     }
-    protected Task<TResult> InvokeWithResponse<T1, T2, T3, T4, T5, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
+    protected Task<TResult> InvokeWithResult<T1, T2, T3, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3)
     {
         ThrowIfNotSingleWriter();
         var writer = new ArrayBufferWriter<byte>();
         var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, arg5, new SerializationContext(name, methodId, messageId));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
     }
-    protected Task<TResult> InvokeWithResponse<T1, T2, T3, T4, T5, T6, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
+    protected Task<TResult> InvokeWithResult<T1, T2, T3, T4, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
     {
         ThrowIfNotSingleWriter();
         var writer = new ArrayBufferWriter<byte>();
         var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, arg5, arg6, new SerializationContext(name, methodId, messageId));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
     }
-    protected Task<TResult> InvokeWithResponse<T1, T2, T3, T4, T5, T6, T7, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7)
+    protected Task<TResult> InvokeWithResult<T1, T2, T3, T4, T5, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
     {
         ThrowIfNotSingleWriter();
         var writer = new ArrayBufferWriter<byte>();
         var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, new SerializationContext(name, methodId, messageId));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
     }
-    protected Task<TResult> InvokeWithResponse<T1, T2, T3, T4, T5, T6, T7, T8, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8)
+    protected Task<TResult> InvokeWithResult<T1, T2, T3, T4, T5, T6, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
     {
         ThrowIfNotSingleWriter();
         var writer = new ArrayBufferWriter<byte>();
         var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, new SerializationContext(name, methodId, messageId));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
     }
-    protected Task<TResult> InvokeWithResponse<T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9)
+    protected Task<TResult> InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7)
     {
         ThrowIfNotSingleWriter();
         var writer = new ArrayBufferWriter<byte>();
         var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, new SerializationContext(name, methodId, messageId));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
     }
-    protected Task<TResult> InvokeWithResponse<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10)
+    protected Task<TResult> InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8)
     {
         ThrowIfNotSingleWriter();
         var writer = new ArrayBufferWriter<byte>();
         var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, new SerializationContext(name, methodId, messageId));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
     }
-    protected Task<TResult> InvokeWithResponse<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11)
+    protected Task<TResult> InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9)
     {
         ThrowIfNotSingleWriter();
         var writer = new ArrayBufferWriter<byte>();
         var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, new SerializationContext(name, methodId, messageId));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
     }
-    protected Task<TResult> InvokeWithResponse<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12)
+    protected Task<TResult> InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10)
     {
         ThrowIfNotSingleWriter();
         var writer = new ArrayBufferWriter<byte>();
         var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, new SerializationContext(name, methodId, messageId));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
     }
-    protected Task<TResult> InvokeWithResponse<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13)
+    protected Task<TResult> InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11)
     {
         ThrowIfNotSingleWriter();
         var writer = new ArrayBufferWriter<byte>();
         var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, new SerializationContext(name, methodId, messageId));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
     }
-    protected Task<TResult> InvokeWithResponse<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14)
+    protected Task<TResult> InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12)
     {
         ThrowIfNotSingleWriter();
         var writer = new ArrayBufferWriter<byte>();
         var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, new SerializationContext(name, methodId, messageId));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
     }
-    protected Task<TResult> InvokeWithResponse<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15)
+    protected Task<TResult> InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13)
     {
         ThrowIfNotSingleWriter();
         var writer = new ArrayBufferWriter<byte>();
         var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
-        _serializer.SerializeArgument(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, new SerializationContext(name, methodId, messageId));
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
+    }
+    protected Task<TResult> InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14)
+    {
+        ThrowIfNotSingleWriter();
+        var writer = new ArrayBufferWriter<byte>();
+        var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, new SerializationContext(name, methodId, messageId));
+        _writer.Write(writer.WrittenMemory);
+        return task;
+    }
+    protected Task<TResult> InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, TResult>(string name, int methodId, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15)
+    {
+        ThrowIfNotSingleWriter();
+        var writer = new ArrayBufferWriter<byte>();
+        var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
+        _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, new SerializationContext(name, methodId, messageId));
+        _writer.Write(writer.WrittenMemory);
+        return task;
+    }
+
+    private (Task Task, Guid MessageId) EnqueuePendingMessage(string name, int methodId)
+    {
+        var messageId = Guid.NewGuid();
+
+        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var pendingMessage = PendingMessage.Create(name, methodId, messageId, tcs, _serializer);
+        _pendingQueue.Enqueue(messageId, pendingMessage);
+        return (tcs.Task, messageId);
     }
 
     private (Task<TResult> Task, Guid MessageId) EnqueuePendingMessage<TResult>(string name, int methodId)

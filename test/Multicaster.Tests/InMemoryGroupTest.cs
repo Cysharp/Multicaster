@@ -150,18 +150,18 @@ public class InMemoryGroupTest
     {
         // Arrange
         var receivers = Enumerable.Range(0, 10000)
-            .Select(x => (new GreeterReceiver(x.ToString()), Guid.NewGuid()))
+            .Select(x => (new TestInMemoryReceiver(), Guid.NewGuid()))
             .ToArray();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddSynchronousGroup<IGreeterReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
         foreach (var (receiver, receiverId) in receivers)
         {
             group.Add(receiverId, receiver);
         }
 
         // Act
-        var receiversQueue = new ConcurrentQueue<(GreeterReceiver, Guid)>(receivers);
+        var receiversQueue = new ConcurrentQueue<(TestInMemoryReceiver, Guid)>(receivers);
         var waiter = new ManualResetEventSlim(false);
         var tasks = Enumerable.Range(0, 8).Select(_ =>
                 Task.Run(() =>
@@ -187,18 +187,18 @@ public class InMemoryGroupTest
     {
         // Arrange
         var receivers = Enumerable.Range(0, 10000)
-            .Select(x => (new GreeterReceiver(x.ToString()), Guid.NewGuid()))
+            .Select(x => (new TestInMemoryReceiver(), Guid.NewGuid()))
             .ToArray();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddGroup<IGreeterReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddGroup<ITestReceiver>("MyGroup");
         foreach (var (receiver, receiverId) in receivers)
         {
             await group.AddAsync(receiverId, receiver);
         }
 
         // Act
-        var receiversQueue = new ConcurrentQueue<(GreeterReceiver, Guid)>(receivers);
+        var receiversQueue = new ConcurrentQueue<(TestInMemoryReceiver, Guid)>(receivers);
         var waiter = new ManualResetEventSlim(false);
         var tasks = Enumerable.Range(0, 8).Select(_ =>
                 Task.Run(async () =>
@@ -223,13 +223,13 @@ public class InMemoryGroupTest
     public void Add()
     {
         // Arrange
-        var receiverA = new GreeterReceiver("A");
+        var receiverA = new TestInMemoryReceiver();
         var receiverIdA = Guid.NewGuid();
-        var receiverB = new GreeterReceiver("B");
+        var receiverB = new TestInMemoryReceiver();
         var receiverIdB = Guid.NewGuid();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddSynchronousGroup<IGreeterReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
 
         // Act
         group.Add(receiverIdA, receiverA);
@@ -243,13 +243,13 @@ public class InMemoryGroupTest
     public async Task AddAsync()
     {
         // Arrange
-        var receiverA = new GreeterReceiver("A");
+        var receiverA = new TestInMemoryReceiver();
         var receiverIdA = Guid.NewGuid();
-        var receiverB = new GreeterReceiver("B");
+        var receiverB = new TestInMemoryReceiver();
         var receiverIdB = Guid.NewGuid();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddGroup<IGreeterReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddGroup<ITestReceiver>("MyGroup");
 
         // Act
         await group.AddAsync(receiverIdA, receiverA);
@@ -263,13 +263,13 @@ public class InMemoryGroupTest
     public void Remove()
     {
         // Arrange
-        var receiverA = new GreeterReceiver("A");
+        var receiverA = new TestInMemoryReceiver();
         var receiverIdA = Guid.NewGuid();
-        var receiverB = new GreeterReceiver("B");
+        var receiverB = new TestInMemoryReceiver();
         var receiverIdB = Guid.NewGuid();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddSynchronousGroup<IGreeterReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
         group.Add(receiverIdA, receiverA);
         group.Add(receiverIdB, receiverB);
 
@@ -284,13 +284,13 @@ public class InMemoryGroupTest
     public async Task RemoveAsync()
     {
         // Arrange
-        var receiverA = new GreeterReceiver("A");
+        var receiverA = new TestInMemoryReceiver();
         var receiverIdA = Guid.NewGuid();
-        var receiverB = new GreeterReceiver("B");
+        var receiverB = new TestInMemoryReceiver();
         var receiverIdB = Guid.NewGuid();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddGroup<IGreeterReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddGroup<ITestReceiver>("MyGroup");
         await group.AddAsync(receiverIdA, receiverA);
         await group.AddAsync(receiverIdB, receiverB);
 
@@ -302,42 +302,12 @@ public class InMemoryGroupTest
     }
 
     [Fact]
-    public void Broadcast()
-    {
-        // Arrange
-        var receiverA = new GreeterReceiver("A");
-        var receiverIdA = Guid.NewGuid();
-        var receiverB = new GreeterReceiver("B");
-        var receiverIdB = Guid.NewGuid();
-
-        IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddSynchronousGroup<IGreeterReceiver>("MyGroup");
-        group.Add(receiverIdA, receiverA);
-        group.Add(receiverIdB, receiverB);
-
-        // Act
-        group.All.OnMessage("Sender1", "Hello");
-        group.All.OnMessage("Sender2", "World");
-
-        // Assert
-        Assert.Equal([
-            ("Sender1", "Hello"),
-            ("Sender2", "World"),
-        ], receiverA.Received);
-
-        Assert.Equal([
-            ("Sender1", "Hello"),
-            ("Sender2", "World"),
-        ], receiverB.Received);
-    }
-
-    [Fact]
     public void Parameter_Zero()
     {
         // Arrange
-        var receiverA = new TestReceiver();
+        var receiverA = new TestInMemoryReceiver();
         var receiverIdA = Guid.NewGuid();
-        var receiverB = new TestReceiver();
+        var receiverB = new TestInMemoryReceiver();
         var receiverIdB = Guid.NewGuid();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
@@ -349,17 +319,17 @@ public class InMemoryGroupTest
         group.All.Parameter_Zero();
 
         // Assert
-        Assert.Equal([(nameof(ITestReceiver.Parameter_Zero), TestReceiver.ParameterZeroArgument)], receiverA.Received);
-        Assert.Equal([(nameof(ITestReceiver.Parameter_Zero), TestReceiver.ParameterZeroArgument)], receiverB.Received);
+        Assert.Equal([(nameof(ITestReceiver.Parameter_Zero), TestInMemoryReceiver.ParameterZeroArgument)], receiverA.Received);
+        Assert.Equal([(nameof(ITestReceiver.Parameter_Zero), TestInMemoryReceiver.ParameterZeroArgument)], receiverB.Received);
     }
 
     [Fact]
     public void Parameter_One()
     {
         // Arrange
-        var receiverA = new TestReceiver();
+        var receiverA = new TestInMemoryReceiver();
         var receiverIdA = Guid.NewGuid();
-        var receiverB = new TestReceiver();
+        var receiverB = new TestInMemoryReceiver();
         var receiverIdB = Guid.NewGuid();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
@@ -379,9 +349,9 @@ public class InMemoryGroupTest
     public void Parameter_Two()
     {
         // Arrange
-        var receiverA = new TestReceiver();
+        var receiverA = new TestInMemoryReceiver();
         var receiverIdA = Guid.NewGuid();
-        var receiverB = new TestReceiver();
+        var receiverB = new TestInMemoryReceiver();
         var receiverIdB = Guid.NewGuid();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
@@ -401,9 +371,9 @@ public class InMemoryGroupTest
     public void Parameter_Many()
     {
         // Arrange
-        var receiverA = new TestReceiver();
+        var receiverA = new TestInMemoryReceiver();
         var receiverIdA = Guid.NewGuid();
-        var receiverB = new TestReceiver();
+        var receiverB = new TestInMemoryReceiver();
         var receiverIdB = Guid.NewGuid();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
@@ -423,13 +393,13 @@ public class InMemoryGroupTest
     public void Group_Separation()
     {
         // Arrange
-        var receiverA = new TestReceiver();
+        var receiverA = new TestInMemoryReceiver();
         var receiverIdA = Guid.NewGuid();
-        var receiverB = new TestReceiver();
+        var receiverB = new TestInMemoryReceiver();
         var receiverIdB = Guid.NewGuid();
-        var receiverC = new TestReceiver();
+        var receiverC = new TestInMemoryReceiver();
         var receiverIdC = Guid.NewGuid();
-        var receiverD = new TestReceiver();
+        var receiverD = new TestInMemoryReceiver();
         var receiverIdD = Guid.NewGuid();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
@@ -455,13 +425,13 @@ public class InMemoryGroupTest
     public void IgnoreExceptions()
     {
         // Arrange
-        var receiverA = new TestReceiver();
+        var receiverA = new TestInMemoryReceiver();
         var receiverIdA = Guid.NewGuid();
-        var receiverB = new TestReceiver();
+        var receiverB = new TestInMemoryReceiver();
         var receiverIdB = Guid.NewGuid();
-        var receiverC = new TestReceiver();
+        var receiverC = new TestInMemoryReceiver();
         var receiverIdC = Guid.NewGuid();
-        var receiverD = new TestReceiver();
+        var receiverD = new TestInMemoryReceiver();
         var receiverIdD = Guid.NewGuid();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
@@ -475,21 +445,21 @@ public class InMemoryGroupTest
         var ex = Record.Exception(() => groupA.All.Throw());
 
         // Assert
-        Assert.Equal([(nameof(ITestReceiver.Throw), TestReceiver.ParameterZeroArgument)], receiverA.Received);
-        Assert.Equal([(nameof(ITestReceiver.Throw), TestReceiver.ParameterZeroArgument)], receiverB.Received);
-        Assert.Equal([(nameof(ITestReceiver.Throw), TestReceiver.ParameterZeroArgument)], receiverC.Received);
-        Assert.Equal([(nameof(ITestReceiver.Throw), TestReceiver.ParameterZeroArgument)], receiverD.Received);
+        Assert.Equal([(nameof(ITestReceiver.Throw), TestInMemoryReceiver.ParameterZeroArgument)], receiverA.Received);
+        Assert.Equal([(nameof(ITestReceiver.Throw), TestInMemoryReceiver.ParameterZeroArgument)], receiverB.Received);
+        Assert.Equal([(nameof(ITestReceiver.Throw), TestInMemoryReceiver.ParameterZeroArgument)], receiverC.Received);
+        Assert.Equal([(nameof(ITestReceiver.Throw), TestInMemoryReceiver.ParameterZeroArgument)], receiverD.Received);
     }
 
     [Fact]
     public void Except()
     {
         // Arrange
-        var receiverA = new TestReceiver();
+        var receiverA = new TestInMemoryReceiver();
         var receiverIdA = Guid.NewGuid();
-        var receiverB = new TestReceiver();
+        var receiverB = new TestInMemoryReceiver();
         var receiverIdB = Guid.NewGuid();
-        var receiverC = new TestReceiver();
+        var receiverC = new TestInMemoryReceiver();
         var receiverIdC = Guid.NewGuid();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
@@ -511,11 +481,11 @@ public class InMemoryGroupTest
     public void Only()
     {
         // Arrange
-        var receiverA = new TestReceiver();
+        var receiverA = new TestInMemoryReceiver();
         var receiverIdA = Guid.NewGuid();
-        var receiverB = new TestReceiver();
+        var receiverB = new TestInMemoryReceiver();
         var receiverIdB = Guid.NewGuid();
-        var receiverC = new TestReceiver();
+        var receiverC = new TestInMemoryReceiver();
         var receiverIdC = Guid.NewGuid();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
@@ -537,11 +507,11 @@ public class InMemoryGroupTest
     public void Single()
     {
         // Arrange
-        var receiverA = new TestReceiver();
+        var receiverA = new TestInMemoryReceiver();
         var receiverIdA = Guid.NewGuid();
-        var receiverB = new TestReceiver();
+        var receiverB = new TestInMemoryReceiver();
         var receiverIdB = Guid.NewGuid();
-        var receiverC = new TestReceiver();
+        var receiverC = new TestInMemoryReceiver();
         var receiverIdC = Guid.NewGuid();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
@@ -563,11 +533,11 @@ public class InMemoryGroupTest
     public void Single_NotContains()
     {
         // Arrange
-        var receiverA = new TestReceiver();
+        var receiverA = new TestInMemoryReceiver();
         var receiverIdA = Guid.NewGuid();
-        var receiverB = new TestReceiver();
+        var receiverB = new TestInMemoryReceiver();
         var receiverIdB = Guid.NewGuid();
-        var receiverC = new TestReceiver();
+        var receiverC = new TestInMemoryReceiver();
         var receiverIdC = Guid.NewGuid();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);

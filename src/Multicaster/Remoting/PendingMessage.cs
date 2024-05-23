@@ -33,11 +33,23 @@ public class PendingMessage
     public static PendingMessage Create<TResult>(string methodName, int methodId, Guid messageId, object taskCompletionSource, IRemoteSerializer serializer)
         => new(methodName, methodId, messageId, taskCompletionSource, serializer, Setter<TResult>.SetResult, Setter<TResult>.SetException);
 
+    public static PendingMessage Create(string methodName, int methodId, Guid messageId, object taskCompletionSource, IRemoteSerializer serializer)
+        => new(methodName, methodId, messageId, taskCompletionSource, serializer, Setter.SetResult, Setter.SetException);
+
+    static class Setter
+    {
+        public static readonly Action<PendingMessage, IRemoteSerializer, ReadOnlyMemory<byte>> SetResult
+            = static (message, serializer, data) => ((TaskCompletionSource)message.TaskCompletionSource).TrySetResult();
+
+        public static readonly Action<PendingMessage, Exception> SetException
+            = static (message, ex) => ((TaskCompletionSource)message.TaskCompletionSource).TrySetException(ex);
+    }
+
     static class Setter<TResult>
     {
         public static readonly Action<PendingMessage, IRemoteSerializer, ReadOnlyMemory<byte>> SetResult
             = static (message, serializer, data) => ((TaskCompletionSource<TResult>)message.TaskCompletionSource).TrySetResult(
-                serializer.DeserializeResponse<TResult>(new ReadOnlySequence<byte>(data), new SerializationContext(message.MethodName, message.MethodId, message.MessageId)));
+                serializer.DeserializeResult<TResult>(new ReadOnlySequence<byte>(data), new SerializationContext(message.MethodName, message.MethodId, message.MessageId)));
 
         public static readonly Action<PendingMessage, Exception> SetException
             = static (message, ex) => ((TaskCompletionSource<TResult>)message.TaskCompletionSource).TrySetException(ex);

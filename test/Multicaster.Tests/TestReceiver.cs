@@ -16,7 +16,7 @@ public interface ITestReceiver
     Task<string> ClientInvoke_Parameter_Many(int arg1, string arg2, bool arg3, long arg4);
 }
 
-public class TestReceiver : ITestReceiver
+public class TestInMemoryReceiver : ITestReceiver
 {
     public static readonly object ParameterZeroArgument = new();
 
