@@ -67,8 +67,11 @@ public class DynamicInMemoryProxyFactory : IInMemoryProxyFactory
 
                     // Invoke<T1, T2...>(T1, T2, ..., Action<T, T1, T2...>)
                     var methodInvoke = typeof(InMemoryProxyBase<T>).GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
-                        .Single(x => x.Name == "Invoke" && x.GetGenericArguments().Length == method.GetParameters().Length)
-                        .MakeGenericMethod(method.GetParameters().Select(x => x.ParameterType).ToArray());
+                        .Single(x => x.Name == "Invoke" && x.GetGenericArguments().Length == method.GetParameters().Length);
+                    if (methodInvoke.ContainsGenericParameters)
+                    {
+                        methodInvoke = methodInvoke.MakeGenericMethod(method.GetParameters().Select(x => x.ParameterType).ToArray());
+                    }
 
                     // private static readonly Action<...> _thunk{MethodName}Delegate;
                     var fieldDelegate = typeBuilder.DefineField($"_thunk{method.Name}Delegate", delegateType, FieldAttributes.Private | FieldAttributes.Static);
