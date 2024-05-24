@@ -41,11 +41,11 @@ public class RemoteClientResultPendingTaskRegistry : IRemoteClientResultPendingT
 
     public bool TryGetAndUnregisterPendingTask(Guid messageId, [NotNullWhen(true)] out PendingTask? pendingTask)
     {
-        var removed = _pendingTasks.TryRemove(messageId, out var messageAndCancelRegistration);
+        var removed = _pendingTasks.TryRemove(messageId, out var taskAndCancelRegistration);
         if (removed)
         {
-            messageAndCancelRegistration.CancelRegistration.Dispose();
-            pendingTask = messageAndCancelRegistration.Task;
+            taskAndCancelRegistration.CancelRegistration.Dispose();
+            pendingTask = taskAndCancelRegistration.Task;
         }
         else
         {
