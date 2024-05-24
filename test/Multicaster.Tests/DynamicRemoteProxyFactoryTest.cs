@@ -122,9 +122,9 @@ public class DynamicRemoteProxyFactoryTest
         Assert.Equal([], serialized.Arguments);
 
         Assert.Equal(1, pendingTasks.Count);
-        Assert.True(pendingTasks.TryGetAndUnregisterPendingTask(serialized.MessageId.Value, out var pendingMessage));
+        Assert.True(pendingTasks.TryGetAndUnregisterPendingTask(serialized.MessageId.Value, out var pendingTask));
         Assert.False(task.IsCompleted);
-        pendingMessage.TrySetResult("[]"u8.ToArray());
+        pendingTask.TrySetResult("[]"u8.ToArray());
         await Task.Delay(100);
         Assert.True(task.IsCompleted);
 
@@ -155,9 +155,9 @@ public class DynamicRemoteProxyFactoryTest
         Assert.Equal(1234567890L, ((JsonElement)serialized.Arguments[3]!).GetInt64());
 
         Assert.Equal(1, pendingTasks.Count);
-        Assert.True(pendingTasks.TryGetAndUnregisterPendingTask(serialized.MessageId.Value, out var pendingMessage));
+        Assert.True(pendingTasks.TryGetAndUnregisterPendingTask(serialized.MessageId.Value, out var pendingTask));
         Assert.False(task.IsCompleted);
-        pendingMessage.TrySetResult("[]"u8.ToArray());
+        pendingTask.TrySetResult("[]"u8.ToArray());
         await Task.Delay(100);
         Assert.True(task.IsCompleted);
 
@@ -185,9 +185,9 @@ public class DynamicRemoteProxyFactoryTest
         Assert.Equal([], serialized.Arguments);
 
         Assert.Equal(1, pendingTasks.Count);
-        Assert.True(pendingTasks.TryGetAndUnregisterPendingTask(serialized.MessageId.Value, out var pendingMessage));
+        Assert.True(pendingTasks.TryGetAndUnregisterPendingTask(serialized.MessageId.Value, out var pendingTask));
         Assert.False(task.IsCompleted);
-        pendingMessage.TrySetResult("\"Hello!\""u8.ToArray());
+        pendingTask.TrySetResult("\"Hello!\""u8.ToArray());
         var result = await task.WaitAsync(TimeSpan.FromSeconds(1));
         Assert.True(task.IsCompleted);
         Assert.Equal("Hello!", result);
@@ -219,9 +219,9 @@ public class DynamicRemoteProxyFactoryTest
         Assert.Equal(1234567890L, ((JsonElement)serialized.Arguments[3]!).GetInt64());
 
         Assert.Equal(1, pendingTasks.Count);
-        Assert.True(pendingTasks.TryGetAndUnregisterPendingTask(serialized.MessageId.Value, out var pendingMessage));
+        Assert.True(pendingTasks.TryGetAndUnregisterPendingTask(serialized.MessageId.Value, out var pendingTask));
         Assert.False(task.IsCompleted);
-        pendingMessage.TrySetResult("\"Hello!\""u8.ToArray());
+        pendingTask.TrySetResult("\"Hello!\""u8.ToArray());
         var result = await task.WaitAsync(TimeSpan.FromSeconds(1));
         Assert.True(task.IsCompleted);
         Assert.Equal("Hello!", result);

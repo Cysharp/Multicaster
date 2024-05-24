@@ -5,18 +5,18 @@ namespace Cysharp.Runtime.Multicast.Remoting;
 
 public interface IRemoteClientResultPendingTaskRegistry
 {
-    void Register(PendingTask pendingMessage);
-    bool TryGetAndUnregisterPendingTask(Guid messageId, [NotNullWhen(true)] out PendingTask? pendingMessage);
+    void Register(PendingTask pendingTask);
+    bool TryGetAndUnregisterPendingTask(Guid messageId, [NotNullWhen(true)] out PendingTask? pendingTask);
     PendingTask CreateTask<TResult>(string methodName, int methodId, Guid messageId, object taskCompletionSource, CancellationToken timeoutCancellationToken, IRemoteSerializer serializer);
     PendingTask CreateTask(string methodName, int methodId, Guid messageId, object taskCompletionSource, CancellationToken timeoutCancellationToken, IRemoteSerializer serializer);
 }
 
 public class RemoteClientResultPendingTaskRegistry : IRemoteClientResultPendingTaskRegistry
 {
-    private readonly ConcurrentDictionary<Guid, (PendingTask Message, IDisposable CancelRegistration)> _pendingMessages = new();
+    private readonly ConcurrentDictionary<Guid, (PendingTask Message, IDisposable CancelRegistration)> _pendingTasks = new();
     private readonly TimeSpan _timeout;
 
-    public int Count => _pendingMessages.Count; // for unit tests
+    public int Count => _pendingTasks.Count; // for unit tests
 
     public RemoteClientResultPendingTaskRegistry(TimeSpan? timeout = default)
     {
@@ -29,27 +29,27 @@ public class RemoteClientResultPendingTaskRegistry : IRemoteClientResultPendingT
     public PendingTask CreateTask(string methodName, int methodId, Guid messageId, object taskCompletionSource, CancellationToken timeoutCancellationToken, IRemoteSerializer serializer)
         => PendingTask.Create(methodName, methodId, messageId, taskCompletionSource, timeoutCancellationToken.CanBeCanceled ? timeoutCancellationToken : new CancellationTokenSource(_timeout).Token, serializer);
 
-    public void Register(PendingTask pendingMessage)
+    public void Register(PendingTask pendingTask)
     {
-        var registration = pendingMessage.TimeoutCancellationToken.Register(() =>
+        var registration = pendingTask.TimeoutCancellationToken.Register(() =>
         {
-            pendingMessage.TrySetCanceled(pendingMessage.TimeoutCancellationToken);
-            _ = TryGetAndUnregisterPendingTask(pendingMessage.MessageId, out _);
+            pendingTask.TrySetCanceled(pendingTask.TimeoutCancellationToken);
+            _ = TryGetAndUnregisterPendingTask(pendingTask.MessageId, out _);
         });
-        _pendingMessages[pendingMessage.MessageId] = (pendingMessage, registration);
+        _pendingTasks[pendingTask.MessageId] = (pendingTask, registration);
     }
 
-    public bool TryGetAndUnregisterPendingTask(Guid messageId, [NotNullWhen(true)] out PendingTask? pendingMessage)
+    public bool TryGetAndUnregisterPendingTask(Guid messageId, [NotNullWhen(true)] out PendingTask? pendingTask)
     {
-        var removed = _pendingMessages.TryRemove(messageId, out var messageAndCancelRegistration);
+        var removed = _pendingTasks.TryRemove(messageId, out var messageAndCancelRegistration);
         if (removed)
         {
             messageAndCancelRegistration.CancelRegistration.Dispose();
-            pendingMessage = messageAndCancelRegistration.Message;
+            pendingTask = messageAndCancelRegistration.Message;
         }
         else
         {
-            pendingMessage = null;
+            pendingTask = null;
         }
         return removed;
     }
