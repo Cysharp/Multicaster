@@ -11,13 +11,13 @@ public abstract class RemoteProxyBase : IRemoteProxy
 {
     private readonly IRemoteReceiverWriter _writer;
     private readonly IRemoteSerializer _serializer;
-    private readonly IRemoteCallPendingMessageQueue _pendingQueue;
+    private readonly IRemoteClientResultPendingTaskRegistry _pendingTasks;
 
-    protected RemoteProxyBase(IRemoteReceiverWriter writer, IRemoteSerializer serializer, IRemoteCallPendingMessageQueue pendingQueue)
+    protected RemoteProxyBase(IRemoteReceiverWriter writer, IRemoteSerializer serializer, IRemoteClientResultPendingTaskRegistry pendingTasks)
     {
         _writer = writer;
         _serializer = serializer;
-        _pendingQueue = pendingQueue;
+        _pendingTasks = pendingTasks;
     }
 
     bool IRemoteProxy.TryGetDirectWriter([NotNullWhen(true)] out IRemoteReceiverWriter? receiver)
@@ -125,7 +125,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage(name, methodId);
+        var (task, messageId) = EnqueuePendingTask(name, methodId);
         _serializer.SerializeInvocation(writer, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -134,7 +134,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage(name, methodId);
+        var (task, messageId) = EnqueuePendingTask(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -143,7 +143,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage(name, methodId);
+        var (task, messageId) = EnqueuePendingTask(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -152,7 +152,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage(name, methodId);
+        var (task, messageId) = EnqueuePendingTask(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -161,7 +161,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage(name, methodId);
+        var (task, messageId) = EnqueuePendingTask(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -170,7 +170,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage(name, methodId);
+        var (task, messageId) = EnqueuePendingTask(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -179,7 +179,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage(name, methodId);
+        var (task, messageId) = EnqueuePendingTask(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -188,7 +188,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage(name, methodId);
+        var (task, messageId) = EnqueuePendingTask(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -197,7 +197,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage(name, methodId);
+        var (task, messageId) = EnqueuePendingTask(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -206,7 +206,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage(name, methodId);
+        var (task, messageId) = EnqueuePendingTask(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -215,7 +215,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage(name, methodId);
+        var (task, messageId) = EnqueuePendingTask(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -224,7 +224,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage(name, methodId);
+        var (task, messageId) = EnqueuePendingTask(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -233,7 +233,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage(name, methodId);
+        var (task, messageId) = EnqueuePendingTask(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -242,7 +242,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage(name, methodId);
+        var (task, messageId) = EnqueuePendingTask(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -251,7 +251,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage(name, methodId);
+        var (task, messageId) = EnqueuePendingTask(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -261,7 +261,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
+        var (task, messageId) = EnqueuePendingTask<TResult>(name, methodId);
         _serializer.SerializeInvocation(writer, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -270,7 +270,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
+        var (task, messageId) = EnqueuePendingTask<TResult>(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -279,7 +279,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
+        var (task, messageId) = EnqueuePendingTask<TResult>(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -288,7 +288,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
+        var (task, messageId) = EnqueuePendingTask<TResult>(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -297,7 +297,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
+        var (task, messageId) = EnqueuePendingTask<TResult>(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -306,7 +306,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
+        var (task, messageId) = EnqueuePendingTask<TResult>(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -315,7 +315,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
+        var (task, messageId) = EnqueuePendingTask<TResult>(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -324,7 +324,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
+        var (task, messageId) = EnqueuePendingTask<TResult>(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -333,7 +333,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
+        var (task, messageId) = EnqueuePendingTask<TResult>(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -342,7 +342,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
+        var (task, messageId) = EnqueuePendingTask<TResult>(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -351,7 +351,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
+        var (task, messageId) = EnqueuePendingTask<TResult>(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -360,7 +360,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
+        var (task, messageId) = EnqueuePendingTask<TResult>(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -369,7 +369,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
+        var (task, messageId) = EnqueuePendingTask<TResult>(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -378,7 +378,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
+        var (task, messageId) = EnqueuePendingTask<TResult>(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -387,7 +387,7 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
+        var (task, messageId) = EnqueuePendingTask<TResult>(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
@@ -396,29 +396,29 @@ public abstract class RemoteProxyBase : IRemoteProxy
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingMessage<TResult>(name, methodId);
+        var (task, messageId) = EnqueuePendingTask<TResult>(name, methodId);
         _serializer.SerializeInvocation(writer, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, new SerializationContext(name, methodId, messageId));
         _writer.Write(writer.WrittenMemory);
         return task;
     }
 
-    private (Task Task, Guid MessageId) EnqueuePendingMessage(string name, int methodId, CancellationToken timeoutCancellationToken = default)
+    private (Task Task, Guid MessageId) EnqueuePendingTask(string name, int methodId, CancellationToken timeoutCancellationToken = default)
     {
         var messageId = Guid.NewGuid();
 
         var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var pendingMessage = _pendingQueue.CreateMessage(name, methodId, messageId, tcs, timeoutCancellationToken, _serializer);
-        _pendingQueue.Enqueue(pendingMessage);
+        var pendingTask = _pendingTasks.CreateTask(name, methodId, messageId, tcs, timeoutCancellationToken, _serializer);
+        _pendingTasks.Register(pendingTask);
         return (tcs.Task, messageId);
     }
 
-    private (Task<TResult> Task, Guid MessageId) EnqueuePendingMessage<TResult>(string name, int methodId, CancellationToken timeoutCancellationToken = default)
+    private (Task<TResult> Task, Guid MessageId) EnqueuePendingTask<TResult>(string name, int methodId, CancellationToken timeoutCancellationToken = default)
     {
         var messageId = Guid.NewGuid();
 
         var tcs = new TaskCompletionSource<TResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var pendingMessage = _pendingQueue.CreateMessage<TResult>(name, methodId, messageId, tcs, timeoutCancellationToken, _serializer);
-        _pendingQueue.Enqueue(pendingMessage);
+        var pendingTask = _pendingTasks.CreateTask<TResult>(name, methodId, messageId, tcs, timeoutCancellationToken, _serializer);
+        _pendingTasks.Register(pendingTask);
         return (tcs.Task, messageId);
     }
 

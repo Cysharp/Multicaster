@@ -10,21 +10,21 @@ public class RemoteCompositeGroupProvider : IMulticastGroupProvider
     private readonly IInMemoryProxyFactory _proxyFactory;
     private readonly IRemoteProxyFactory _remoteProxyFactory;
     private readonly IRemoteSerializer _remoteSerializer;
-    private readonly IRemoteCallPendingMessageQueue _pendingQueue;
+    private readonly IRemoteClientResultPendingTaskRegistry _pendingTasks;
 
-    public RemoteCompositeGroupProvider(IInMemoryProxyFactory proxyFactory, IRemoteProxyFactory remoteProxyFactory, IRemoteSerializer remoteSerializer, IRemoteCallPendingMessageQueue pendingQueue)
+    public RemoteCompositeGroupProvider(IInMemoryProxyFactory proxyFactory, IRemoteProxyFactory remoteProxyFactory, IRemoteSerializer remoteSerializer, IRemoteClientResultPendingTaskRegistry pendingTasks)
     {
         _proxyFactory = proxyFactory;
         _remoteProxyFactory = remoteProxyFactory;
         _remoteSerializer = remoteSerializer;
-        _pendingQueue = pendingQueue;
+        _pendingTasks = pendingTasks;
     }
 
     public IMulticastAsyncGroup<T> GetOrAddGroup<T>(string name)
-        => (IMulticastAsyncGroup<T>)_groups.GetOrAdd((typeof(T), name), _ => new RemoteCompositeGroup<T>(_proxyFactory, _remoteProxyFactory, _remoteSerializer, _pendingQueue));
+        => (IMulticastAsyncGroup<T>)_groups.GetOrAdd((typeof(T), name), _ => new RemoteCompositeGroup<T>(_proxyFactory, _remoteProxyFactory, _remoteSerializer, _pendingTasks));
 
     public IMulticastSyncGroup<T> GetOrAddSynchronousGroup<T>(string name)
-        => (IMulticastSyncGroup<T>)_groups.GetOrAdd((typeof(T), name), _ => new RemoteCompositeGroup<T>(_proxyFactory, _remoteProxyFactory, _remoteSerializer, _pendingQueue));
+        => (IMulticastSyncGroup<T>)_groups.GetOrAdd((typeof(T), name), _ => new RemoteCompositeGroup<T>(_proxyFactory, _remoteProxyFactory, _remoteSerializer, _pendingTasks));
 }
 
 internal class RemoteCompositeGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>
@@ -35,12 +35,12 @@ internal class RemoteCompositeGroup<T> : IMulticastAsyncGroup<T>, IMulticastSync
 
     public T All { get; }
 
-    public RemoteCompositeGroup(IInMemoryProxyFactory memoryProxyFactory, IRemoteProxyFactory remoteProxyFactory, IRemoteSerializer remoteSerializer, IRemoteCallPendingMessageQueue pendingQueue)
+    public RemoteCompositeGroup(IInMemoryProxyFactory memoryProxyFactory, IRemoteProxyFactory remoteProxyFactory, IRemoteSerializer remoteSerializer, IRemoteClientResultPendingTaskRegistry pendingTasks)
     {
         _memoryProxyFactory = memoryProxyFactory;
 
         _memoryGroup = (Guid.NewGuid(), new InMemoryGroup<T>(memoryProxyFactory));
-        _remoteGroup = (Guid.NewGuid(), new RemoteGroup<T>(remoteProxyFactory, remoteSerializer, pendingQueue));
+        _remoteGroup = (Guid.NewGuid(), new RemoteGroup<T>(remoteProxyFactory, remoteSerializer, pendingTasks));
         All = memoryProxyFactory.Create<T>([KeyValuePair.Create(_memoryGroup.Id, _memoryGroup.Group.All), KeyValuePair.Create(_remoteGroup.Id, _remoteGroup.Group.All)]);
     }
 

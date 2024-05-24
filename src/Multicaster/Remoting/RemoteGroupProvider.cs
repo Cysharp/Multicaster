@@ -8,20 +8,20 @@ public class RemoteGroupProvider : IMulticastGroupProvider
     private readonly ConcurrentDictionary<(Type Type, string name), object> _groups = new();
     private readonly IRemoteProxyFactory _proxyFactory;
     private readonly IRemoteSerializer _serializer;
-    private readonly IRemoteCallPendingMessageQueue _pendingQueue;
+    private readonly IRemoteClientResultPendingTaskRegistry _pendingTasks;
 
-    public RemoteGroupProvider(IRemoteProxyFactory proxyFactory, IRemoteSerializer serializer, IRemoteCallPendingMessageQueue pendingQueue)
+    public RemoteGroupProvider(IRemoteProxyFactory proxyFactory, IRemoteSerializer serializer, IRemoteClientResultPendingTaskRegistry pendingTasks)
     {
         _proxyFactory = proxyFactory;
         _serializer = serializer;
-        _pendingQueue = pendingQueue;
+        _pendingTasks = pendingTasks;
     }
 
     public IMulticastAsyncGroup<T> GetOrAddGroup<T>(string name)
-        => (IMulticastAsyncGroup<T>)_groups.GetOrAdd((typeof(T), name), _ => new RemoteGroup<T>(_proxyFactory, _serializer, _pendingQueue));
+        => (IMulticastAsyncGroup<T>)_groups.GetOrAdd((typeof(T), name), _ => new RemoteGroup<T>(_proxyFactory, _serializer, _pendingTasks));
 
     public IMulticastSyncGroup<T> GetOrAddSynchronousGroup<T>(string name)
-        => (IMulticastSyncGroup<T>)_groups.GetOrAdd((typeof(T), name), _ => new RemoteGroup<T>(_proxyFactory, _serializer, _pendingQueue));
+        => (IMulticastSyncGroup<T>)_groups.GetOrAdd((typeof(T), name), _ => new RemoteGroup<T>(_proxyFactory, _serializer, _pendingTasks));
 }
 
 internal class RemoteGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>
@@ -29,17 +29,17 @@ internal class RemoteGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>
     private readonly ConcurrentDictionary<Guid, IRemoteReceiverWriter> _receivers = new();
     private readonly IRemoteProxyFactory _proxyFactory;
     private readonly IRemoteSerializer _serializer;
-    private readonly IRemoteCallPendingMessageQueue _pendingQueue;
+    private readonly IRemoteClientResultPendingTaskRegistry _pendingTasks;
 
     public T All { get; }
 
-    public RemoteGroup(IRemoteProxyFactory proxyFactory, IRemoteSerializer serializer, IRemoteCallPendingMessageQueue pendingQueue)
+    public RemoteGroup(IRemoteProxyFactory proxyFactory, IRemoteSerializer serializer, IRemoteClientResultPendingTaskRegistry pendingTasks)
     {
         _proxyFactory = proxyFactory;
         _serializer = serializer;
-        _pendingQueue = pendingQueue;
+        _pendingTasks = pendingTasks;
 
-        All = _proxyFactory.Create<T>(_receivers, _serializer, _pendingQueue);
+        All = _proxyFactory.Create<T>(_receivers, _serializer, _pendingTasks);
     }
 
     public ValueTask AddAsync(Guid key, T receiver, CancellationToken cancellationToken = default)
@@ -82,11 +82,11 @@ internal class RemoteGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>
     }
 
     public T Except(ImmutableArray<Guid> excludes)
-        => _proxyFactory.Except<T>(_receivers, excludes, _serializer, _pendingQueue);
+        => _proxyFactory.Except<T>(_receivers, excludes, _serializer, _pendingTasks);
 
     public T Only(ImmutableArray<Guid> targets)
-        => _proxyFactory.Only<T>(_receivers, targets, _serializer, _pendingQueue);
+        => _proxyFactory.Only<T>(_receivers, targets, _serializer, _pendingTasks);
 
     public T Single(Guid target)
-        => _proxyFactory.Single<T>(_receivers, target, _serializer, _pendingQueue);
+        => _proxyFactory.Single<T>(_receivers, target, _serializer, _pendingTasks);
 }

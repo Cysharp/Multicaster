@@ -17,9 +17,9 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
         _moduleBuilder = _assemblyBuilder.DefineDynamicModule("Multicaster");
     }
 
-    public T Create<T>(IRemoteReceiverWriter writer, IRemoteSerializer serializer, IRemoteCallPendingMessageQueue pendingQueue)
+    public T Create<T>(IRemoteReceiverWriter writer, IRemoteSerializer serializer, IRemoteClientResultPendingTaskRegistry pendingTasks)
     {
-        return Core<T>.Create(writer, serializer, pendingQueue);
+        return Core<T>.Create(writer, serializer, pendingTasks);
     }
 
     static class Core<T>
@@ -30,8 +30,8 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
         {
             var typeBuilder = _moduleBuilder.DefineType($"{typeof(T).FullName!.Replace(".", "_")}_Proxy", TypeAttributes.Class, typeof(RemoteProxyBase));
             typeBuilder.AddInterfaceImplementation(typeof(T));
-            var ctorBase = typeof(RemoteProxyBase).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, [typeof(IRemoteReceiverWriter), typeof(IRemoteSerializer), typeof(IRemoteCallPendingMessageQueue)])!;
-            var ctor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, [typeof(IRemoteReceiverWriter), typeof(IRemoteSerializer), typeof(IRemoteCallPendingMessageQueue)]);
+            var ctorBase = typeof(RemoteProxyBase).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, [typeof(IRemoteReceiverWriter), typeof(IRemoteSerializer), typeof(IRemoteClientResultPendingTaskRegistry)])!;
+            var ctor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, [typeof(IRemoteReceiverWriter), typeof(IRemoteSerializer), typeof(IRemoteClientResultPendingTaskRegistry)]);
             {
                 var il = ctor.GetILGenerator();
                 il.Emit(OpCodes.Ldarg_0);
@@ -72,9 +72,9 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
             _type = typeBuilder.CreateType()!;
         }
 
-        public static T Create(IRemoteReceiverWriter writer, IRemoteSerializer serializer, IRemoteCallPendingMessageQueue pendingQueue)
+        public static T Create(IRemoteReceiverWriter writer, IRemoteSerializer serializer, IRemoteClientResultPendingTaskRegistry pendingTasks)
         {
-            return (T)Activator.CreateInstance(_type, [writer, serializer, pendingQueue])!;
+            return (T)Activator.CreateInstance(_type, [writer, serializer, pendingTasks])!;
         }
     }
 

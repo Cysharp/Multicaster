@@ -15,11 +15,11 @@ public class RemoteGroupTest
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
-        var pendingQueue = new RemoteCallPendingMessageQueue();
+        var pendingTasks = new RemoteClientResultPendingTaskRegistry();
 
-        var receiverA = CreateReceiverSet(proxyFactory, serializer, pendingQueue);
-        var receiverB = CreateReceiverSet(proxyFactory, serializer, pendingQueue);
-        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(DynamicRemoteProxyFactory.Instance, serializer, pendingQueue);
+        var receiverA = CreateReceiverSet(proxyFactory, serializer, pendingTasks);
+        var receiverB = CreateReceiverSet(proxyFactory, serializer, pendingTasks);
+        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(DynamicRemoteProxyFactory.Instance, serializer, pendingTasks);
         var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
 
         // Act
@@ -39,14 +39,14 @@ public class RemoteGroupTest
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
-        var pendingQueue = new RemoteCallPendingMessageQueue();
+        var pendingTasks = new RemoteClientResultPendingTaskRegistry();
 
-        var receiverA = CreateReceiverSet(proxyFactory, serializer, pendingQueue);
-        var receiverB = CreateReceiverSet(proxyFactory, serializer, pendingQueue);
-        var receiverC = CreateReceiverSet(proxyFactory, serializer, pendingQueue);
-        var receiverD = CreateReceiverSet(proxyFactory, serializer, pendingQueue);
+        var receiverA = CreateReceiverSet(proxyFactory, serializer, pendingTasks);
+        var receiverB = CreateReceiverSet(proxyFactory, serializer, pendingTasks);
+        var receiverC = CreateReceiverSet(proxyFactory, serializer, pendingTasks);
+        var receiverD = CreateReceiverSet(proxyFactory, serializer, pendingTasks);
 
-        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(DynamicRemoteProxyFactory.Instance, serializer, pendingQueue);
+        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(DynamicRemoteProxyFactory.Instance, serializer, pendingTasks);
         var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
         group.Add(receiverA.Id, receiverA.Proxy);
         group.Add(receiverB.Id, receiverB.Proxy);
@@ -67,10 +67,10 @@ public class RemoteGroupTest
     }
 
 
-    private (TestRemoteReceiverWriter Writer, ITestReceiver Proxy, Guid Id) CreateReceiverSet(IRemoteProxyFactory proxyFactory, IRemoteSerializer serializer, IRemoteCallPendingMessageQueue pendingQueue)
+    private (TestRemoteReceiverWriter Writer, ITestReceiver Proxy, Guid Id) CreateReceiverSet(IRemoteProxyFactory proxyFactory, IRemoteSerializer serializer, IRemoteClientResultPendingTaskRegistry pendingTasks)
     {
         var receiverWriter = new TestRemoteReceiverWriter();
-        var receiver = proxyFactory.CreateDirect<ITestReceiver>(receiverWriter, serializer, pendingQueue);
+        var receiver = proxyFactory.CreateDirect<ITestReceiver>(receiverWriter, serializer, pendingTasks);
         var receiverId = Guid.NewGuid();
         return (receiverWriter, receiver, receiverId);
     }
@@ -152,7 +152,7 @@ class TestJsonRemoteSerializer : IRemoteSerializer
         T14 arg14, T15 arg15, in SerializationContext ctx)
         => SerializeInvocationCore(writer, [arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15], ctx);
 
-    public T DeserializeResult<T>(ReadOnlySequence<byte> data, in SerializationContext ctx)
+    public T? DeserializeResult<T>(ReadOnlySequence<byte> data, in SerializationContext ctx)
     {
         var reader = new Utf8JsonReader(data);
         return JsonSerializer.Deserialize<T>(ref reader);
