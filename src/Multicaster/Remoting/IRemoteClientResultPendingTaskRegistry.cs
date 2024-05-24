@@ -13,7 +13,7 @@ public interface IRemoteClientResultPendingTaskRegistry
 
 public class RemoteClientResultPendingTaskRegistry : IRemoteClientResultPendingTaskRegistry
 {
-    private readonly ConcurrentDictionary<Guid, (PendingTask Message, IDisposable CancelRegistration)> _pendingTasks = new();
+    private readonly ConcurrentDictionary<Guid, (PendingTask Task, IDisposable CancelRegistration)> _pendingTasks = new();
     private readonly TimeSpan _timeout;
 
     public int Count => _pendingTasks.Count; // for unit tests
@@ -45,7 +45,7 @@ public class RemoteClientResultPendingTaskRegistry : IRemoteClientResultPendingT
         if (removed)
         {
             messageAndCancelRegistration.CancelRegistration.Dispose();
-            pendingTask = messageAndCancelRegistration.Message;
+            pendingTask = messageAndCancelRegistration.Task;
         }
         else
         {
