@@ -66,6 +66,7 @@ public class RemoteGroupTest
         Assert.Equal([], receiverD.Writer.Written);
     }
 
+
     private (TestRemoteReceiverWriter Writer, ITestReceiver Proxy, Guid Id) CreateReceiverSet(IRemoteProxyFactory proxyFactory, IRemoteSerializer serializer, IRemoteCallPendingMessageQueue pendingQueue)
     {
         var receiverWriter = new TestRemoteReceiverWriter();

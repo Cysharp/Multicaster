@@ -402,23 +402,23 @@ public abstract class RemoteProxyBase : IRemoteProxy
         return task;
     }
 
-    private (Task Task, Guid MessageId) EnqueuePendingMessage(string name, int methodId)
+    private (Task Task, Guid MessageId) EnqueuePendingMessage(string name, int methodId, CancellationToken timeoutCancellationToken = default)
     {
         var messageId = Guid.NewGuid();
 
         var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var pendingMessage = PendingMessage.Create(name, methodId, messageId, tcs, _serializer);
-        _pendingQueue.Enqueue(messageId, pendingMessage);
+        var pendingMessage = _pendingQueue.CreateMessage(name, methodId, messageId, tcs, timeoutCancellationToken, _serializer);
+        _pendingQueue.Enqueue(pendingMessage);
         return (tcs.Task, messageId);
     }
 
-    private (Task<TResult> Task, Guid MessageId) EnqueuePendingMessage<TResult>(string name, int methodId)
+    private (Task<TResult> Task, Guid MessageId) EnqueuePendingMessage<TResult>(string name, int methodId, CancellationToken timeoutCancellationToken = default)
     {
         var messageId = Guid.NewGuid();
 
         var tcs = new TaskCompletionSource<TResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var pendingMessage = PendingMessage.Create<TResult>(name, methodId, messageId, tcs, _serializer);
-        _pendingQueue.Enqueue(messageId, pendingMessage);
+        var pendingMessage = _pendingQueue.CreateMessage<TResult>(name, methodId, messageId, tcs, timeoutCancellationToken, _serializer);
+        _pendingQueue.Enqueue(pendingMessage);
         return (tcs.Task, messageId);
     }
 

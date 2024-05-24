@@ -122,7 +122,7 @@ public class DynamicRemoteProxyFactoryTest
         Assert.Equal([], serialized.Arguments);
 
         Assert.Equal(1, pendingQueue.Count);
-        Assert.True(pendingQueue.TryGetPendingMessage(serialized.MessageId.Value, out var pendingMessage));
+        Assert.True(pendingQueue.TryDequeuePendingMessage(serialized.MessageId.Value, out var pendingMessage));
         Assert.False(task.IsCompleted);
         pendingMessage.TrySetResult("[]"u8.ToArray());
         await Task.Delay(100);
@@ -155,7 +155,7 @@ public class DynamicRemoteProxyFactoryTest
         Assert.Equal(1234567890L, ((JsonElement)serialized.Arguments[3]!).GetInt64());
 
         Assert.Equal(1, pendingQueue.Count);
-        Assert.True(pendingQueue.TryGetPendingMessage(serialized.MessageId.Value, out var pendingMessage));
+        Assert.True(pendingQueue.TryDequeuePendingMessage(serialized.MessageId.Value, out var pendingMessage));
         Assert.False(task.IsCompleted);
         pendingMessage.TrySetResult("[]"u8.ToArray());
         await Task.Delay(100);
@@ -185,7 +185,7 @@ public class DynamicRemoteProxyFactoryTest
         Assert.Equal([], serialized.Arguments);
 
         Assert.Equal(1, pendingQueue.Count);
-        Assert.True(pendingQueue.TryGetPendingMessage(serialized.MessageId.Value, out var pendingMessage));
+        Assert.True(pendingQueue.TryDequeuePendingMessage(serialized.MessageId.Value, out var pendingMessage));
         Assert.False(task.IsCompleted);
         pendingMessage.TrySetResult("\"Hello!\""u8.ToArray());
         var result = await task.WaitAsync(TimeSpan.FromSeconds(1));
@@ -219,7 +219,7 @@ public class DynamicRemoteProxyFactoryTest
         Assert.Equal(1234567890L, ((JsonElement)serialized.Arguments[3]!).GetInt64());
 
         Assert.Equal(1, pendingQueue.Count);
-        Assert.True(pendingQueue.TryGetPendingMessage(serialized.MessageId.Value, out var pendingMessage));
+        Assert.True(pendingQueue.TryDequeuePendingMessage(serialized.MessageId.Value, out var pendingMessage));
         Assert.False(task.IsCompleted);
         pendingMessage.TrySetResult("\"Hello!\""u8.ToArray());
         var result = await task.WaitAsync(TimeSpan.FromSeconds(1));
