@@ -29,8 +29,8 @@ public class RemoteGroupTest
 
         // Assert
         Assert.Equal(2, group.Count());
-        Assert.Equal(["""{"Method":"Parameter_One","MessageId":null,"Arguments":[1234]}"""], receiverA.Writer.Written);
-        Assert.Equal(["""{"Method":"Parameter_One","MessageId":null,"Arguments":[1234]}"""], receiverB.Writer.Written);
+        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}"""], receiverA.Writer.Written);
+        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}"""], receiverB.Writer.Written);
     }
 
     [Fact]
@@ -60,9 +60,9 @@ public class RemoteGroupTest
 
         // Assert
         Assert.Equal(2, group.Count());
-        Assert.Equal(["""{"Method":"Parameter_One","MessageId":null,"Arguments":[1234]}"""], receiverA.Writer.Written);
+        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}"""], receiverA.Writer.Written);
         Assert.Equal([], receiverB.Writer.Written);
-        Assert.Equal(["""{"Method":"Parameter_One","MessageId":null,"Arguments":[1234]}"""], receiverC.Writer.Written);
+        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}"""], receiverC.Writer.Written);
         Assert.Equal([], receiverD.Writer.Written);
     }
 
@@ -89,10 +89,12 @@ class TestJsonRemoteSerializer : IRemoteSerializer
 {
     public int SerializeInvocationCallCount;
 
+    public record SerializedInvocation(string MethodName, int MethodId, Guid? MessageId, IReadOnlyList<object?> Arguments);
+
     private void SerializeInvocationCore(IBufferWriter<byte> writer, IReadOnlyList<object?> args, in SerializationContext ctx)
     {
         var jsonWriter = new Utf8JsonWriter(writer);
-        JsonSerializer.Serialize(jsonWriter, new { Method = ctx.MethodName, MessageId = ctx.MessageId, Arguments = args });
+        JsonSerializer.Serialize(jsonWriter, new SerializedInvocation(ctx.MethodName, ctx.MethodId, ctx.MessageId, args));
         jsonWriter.Flush();
 
         Interlocked.Increment(ref SerializeInvocationCallCount);

@@ -101,6 +101,9 @@ internal sealed class ArrayPoolBufferWriter : IBufferWriter<byte>, IDisposable
             return;
         }
 
+#if DEBUG
+        Array.Fill<byte>(buffer, 0xff);
+#endif
         ArrayPool<byte>.Shared.Return(buffer);
         buffer = null;
 

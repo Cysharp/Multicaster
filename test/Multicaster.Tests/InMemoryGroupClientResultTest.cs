@@ -1,11 +1,9 @@
 ﻿using Cysharp.Runtime.Multicast;
 using Cysharp.Runtime.Multicast.InMemory;
 
-using static Multicaster.Tests.InMemoryGroupTest;
-
 namespace Multicaster.Tests;
 
-public class InMemoryGroupClientInvokeTest
+public class InMemoryGroupClientResultTest
 {
     [Fact]
     public async Task Parameter_Zero_NoReturnValue()
@@ -28,11 +26,11 @@ public class InMemoryGroupClientInvokeTest
         group.Add(receiverIdD, receiverD);
 
         // Act
-        await group.Single(receiverIdB).ClientInvoke_Parameter_Zero_NoReturnValue();
+        await group.Single(receiverIdB).ClientResult_Parameter_Zero_NoReturnValue();
 
         // Assert
         Assert.Equal([], receiverA.Received);
-        Assert.Equal([(nameof(ITestReceiver.ClientInvoke_Parameter_Zero_NoReturnValue), TestInMemoryReceiver.ParameterZeroArgument)], receiverB.Received);
+        Assert.Equal([(nameof(ITestReceiver.ClientResult_Parameter_Zero_NoReturnValue), TestInMemoryReceiver.ParameterZeroArgument)], receiverB.Received);
         Assert.Equal([], receiverC.Received);
         Assert.Equal([], receiverD.Received);
     }
@@ -58,11 +56,11 @@ public class InMemoryGroupClientInvokeTest
         group.Add(receiverIdD, receiverD);
 
         // Act
-        await group.Single(receiverIdB).ClientInvoke_Parameter_One_NoReturnValue(1234);
+        await group.Single(receiverIdB).ClientResult_Parameter_One_NoReturnValue(1234);
 
         // Assert
         Assert.Equal([], receiverA.Received);
-        Assert.Equal([(nameof(ITestReceiver.ClientInvoke_Parameter_One_NoReturnValue), (1234))], receiverB.Received);
+        Assert.Equal([(nameof(ITestReceiver.ClientResult_Parameter_One_NoReturnValue), (1234))], receiverB.Received);
         Assert.Equal([], receiverC.Received);
         Assert.Equal([], receiverD.Received);
     }
@@ -88,11 +86,11 @@ public class InMemoryGroupClientInvokeTest
         group.Add(receiverIdD, receiverD);
 
         // Act
-        await group.Single(receiverIdB).ClientInvoke_Parameter_Many_NoReturnValue(1234, "Hello", true, 1234567890L);
+        await group.Single(receiverIdB).ClientResult_Parameter_Many_NoReturnValue(1234, "Hello", true, 1234567890L);
 
         // Assert
         Assert.Equal([], receiverA.Received);
-        Assert.Equal([(nameof(ITestReceiver.ClientInvoke_Parameter_Many_NoReturnValue), (1234, "Hello", true, 1234567890L))], receiverB.Received);
+        Assert.Equal([(nameof(ITestReceiver.ClientResult_Parameter_Many_NoReturnValue), (1234, "Hello", true, 1234567890L))], receiverB.Received);
         Assert.Equal([], receiverC.Received);
         Assert.Equal([], receiverD.Received);
     }
@@ -118,12 +116,12 @@ public class InMemoryGroupClientInvokeTest
         group.Add(receiverIdD, receiverD);
 
         // Act
-        var retVal = await group.Single(receiverIdB).ClientInvoke_Parameter_Zero();
+        var retVal = await group.Single(receiverIdB).ClientResult_Parameter_Zero();
 
         // Assert
-        Assert.Equal($"{nameof(ITestReceiver.ClientInvoke_Parameter_Zero)}", retVal);
+        Assert.Equal($"{nameof(ITestReceiver.ClientResult_Parameter_Zero)}", retVal);
         Assert.Equal([], receiverA.Received);
-        Assert.Equal([(nameof(ITestReceiver.ClientInvoke_Parameter_Zero), TestInMemoryReceiver.ParameterZeroArgument)], receiverB.Received);
+        Assert.Equal([(nameof(ITestReceiver.ClientResult_Parameter_Zero), TestInMemoryReceiver.ParameterZeroArgument)], receiverB.Received);
         Assert.Equal([], receiverC.Received);
         Assert.Equal([], receiverD.Received);
     }
@@ -149,12 +147,12 @@ public class InMemoryGroupClientInvokeTest
         group.Add(receiverIdD, receiverD);
 
         // Act
-        var retVal = await group.Single(receiverIdB).ClientInvoke_Parameter_One(1234);
+        var retVal = await group.Single(receiverIdB).ClientResult_Parameter_One(1234);
 
         // Assert
-        Assert.Equal($"{nameof(ITestReceiver.ClientInvoke_Parameter_One)}:1234", retVal);
+        Assert.Equal($"{nameof(ITestReceiver.ClientResult_Parameter_One)}:1234", retVal);
         Assert.Equal([], receiverA.Received);
-        Assert.Equal([(nameof(ITestReceiver.ClientInvoke_Parameter_One), (1234))], receiverB.Received);
+        Assert.Equal([(nameof(ITestReceiver.ClientResult_Parameter_One), (1234))], receiverB.Received);
         Assert.Equal([], receiverC.Received);
         Assert.Equal([], receiverD.Received);
     }
@@ -180,12 +178,12 @@ public class InMemoryGroupClientInvokeTest
         group.Add(receiverIdD, receiverD);
 
         // Act
-        var retVal = await group.Single(receiverIdB).ClientInvoke_Parameter_Many(1234, "Hello", true, 1234567890L);
+        var retVal = await group.Single(receiverIdB).ClientResult_Parameter_Many(1234, "Hello", true, 1234567890L);
 
         // Assert
-        Assert.Equal($"{nameof(ITestReceiver.ClientInvoke_Parameter_Many)}:1234,Hello,True,1234567890", retVal);
+        Assert.Equal($"{nameof(ITestReceiver.ClientResult_Parameter_Many)}:1234,Hello,True,1234567890", retVal);
         Assert.Equal([], receiverA.Received);
-        Assert.Equal([(nameof(ITestReceiver.ClientInvoke_Parameter_Many), (1234, "Hello", true, 1234567890L))], receiverB.Received);
+        Assert.Equal([(nameof(ITestReceiver.ClientResult_Parameter_Many), (1234, "Hello", true, 1234567890L))], receiverB.Received);
         Assert.Equal([], receiverC.Received);
         Assert.Equal([], receiverD.Received);
     }
@@ -211,7 +209,7 @@ public class InMemoryGroupClientInvokeTest
         group.Add(receiverIdD, receiverD);
 
         // Act
-        var ex = await Record.ExceptionAsync(async () => await group.All.ClientInvoke_Parameter_Many(1234, "Hello", true, 1234567890L));
+        var ex = await Record.ExceptionAsync(async () => await group.All.ClientResult_Parameter_Many(1234, "Hello", true, 1234567890L));
 
         // Assert
         Assert.NotNull(ex);
@@ -243,7 +241,7 @@ public class InMemoryGroupClientInvokeTest
         group.Add(receiverIdD, receiverD);
 
         // Act
-        var ex = await Record.ExceptionAsync(async () => await group.Single(Guid.NewGuid()).ClientInvoke_Parameter_Many(1234, "Hello", true, 1234567890L));
+        var ex = await Record.ExceptionAsync(async () => await group.Single(Guid.NewGuid()).ClientResult_Parameter_Many(1234, "Hello", true, 1234567890L));
 
         // Assert
         Assert.NotNull(ex);

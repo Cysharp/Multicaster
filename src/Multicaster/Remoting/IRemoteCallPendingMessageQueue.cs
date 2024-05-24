@@ -13,6 +13,8 @@ public class RemoteCallPendingMessageQueue : IRemoteCallPendingMessageQueue
 {
     private readonly ConcurrentDictionary<Guid, PendingMessage> _pendingMessages = new();
 
+    public int Count => _pendingMessages.Count; // for unit tests
+
     public void Enqueue(Guid messageId, PendingMessage pendingMessage)
     {
         _pendingMessages[messageId] = pendingMessage;
