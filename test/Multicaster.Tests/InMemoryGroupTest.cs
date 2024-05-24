@@ -12,13 +12,13 @@ public class InMemoryGroupTest
     {
         // Arrange
         var receivers = Enumerable.Range(0, 10000)
-            .Select(x => (new GreeterReceiver(x.ToString()), Guid.NewGuid()))
+            .Select(x => (new TestInMemoryReceiver(), Guid.NewGuid()))
             .ToArray();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
 
         // Act
-        var receiversQueue = new ConcurrentQueue<(GreeterReceiver, Guid)>(receivers);
+        var receiversQueue = new ConcurrentQueue<(TestInMemoryReceiver, Guid)>(receivers);
         var waiter = new ManualResetEventSlim(false);
         var tasks = Enumerable.Range(0, 8).Select(groupId =>
                 Task.Run(() =>
@@ -27,7 +27,7 @@ public class InMemoryGroupTest
                     while (receiversQueue.TryDequeue(out var receiverAndId))
                     {
                         var (receiver, receiverId) = receiverAndId;
-                        var group = groupProvider.GetOrAddSynchronousGroup<IGreeterReceiver>($"MyGroup_{groupId % 3}");
+                        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>($"MyGroup_{groupId % 3}");
                         group.Add(receiverId, receiver);
                     }
                 }))
@@ -37,9 +37,9 @@ public class InMemoryGroupTest
         await Task.WhenAll(tasks);
 
         // Assert
-        var group1Count = groupProvider.GetOrAddSynchronousGroup<IGreeterReceiver>("MyGroup_0").Count();
-        var group2Count = groupProvider.GetOrAddSynchronousGroup<IGreeterReceiver>("MyGroup_1").Count();
-        var group3Count = groupProvider.GetOrAddSynchronousGroup<IGreeterReceiver>("MyGroup_2").Count();
+        var group1Count = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup_0").Count();
+        var group2Count = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup_1").Count();
+        var group3Count = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup_2").Count();
         Assert.Equal(10000, group1Count + group2Count + group3Count);
     }
 
@@ -48,13 +48,13 @@ public class InMemoryGroupTest
     {
         // Arrange
         var receivers = Enumerable.Range(0, 10000)
-            .Select(x => (new GreeterReceiver(x.ToString()), Guid.NewGuid()))
+            .Select(x => (new TestInMemoryReceiver(), Guid.NewGuid()))
             .ToArray();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
 
         // Act
-        var receiversQueue = new ConcurrentQueue<(GreeterReceiver, Guid)>(receivers);
+        var receiversQueue = new ConcurrentQueue<(TestInMemoryReceiver, Guid)>(receivers);
         var waiter = new ManualResetEventSlim(false);
         var tasks = Enumerable.Range(0, 8).Select(groupId =>
                 Task.Run(async () =>
@@ -63,7 +63,7 @@ public class InMemoryGroupTest
                     while (receiversQueue.TryDequeue(out var receiverAndId))
                     {
                         var (receiver, receiverId) = receiverAndId;
-                        var group = groupProvider.GetOrAddGroup<IGreeterReceiver>($"MyGroup_{groupId % 3}");
+                        var group = groupProvider.GetOrAddGroup<ITestReceiver>($"MyGroup_{groupId % 3}");
                         await group.AddAsync(receiverId, receiver);
                     }
                 }))
@@ -73,9 +73,9 @@ public class InMemoryGroupTest
         await Task.WhenAll(tasks);
 
         // Assert
-        var group1Count = await groupProvider.GetOrAddGroup<IGreeterReceiver>("MyGroup_0").CountAsync();
-        var group2Count = await groupProvider.GetOrAddGroup<IGreeterReceiver>("MyGroup_1").CountAsync();
-        var group3Count = await groupProvider.GetOrAddGroup<IGreeterReceiver>("MyGroup_2").CountAsync();
+        var group1Count = await groupProvider.GetOrAddGroup<ITestReceiver>("MyGroup_0").CountAsync();
+        var group2Count = await groupProvider.GetOrAddGroup<ITestReceiver>("MyGroup_1").CountAsync();
+        var group3Count = await groupProvider.GetOrAddGroup<ITestReceiver>("MyGroup_2").CountAsync();
         Assert.Equal(10000, group1Count + group2Count + group3Count);
     }
 
@@ -84,14 +84,14 @@ public class InMemoryGroupTest
     {
         // Arrange
         var receivers = Enumerable.Range(0, 10000)
-            .Select(x => (new GreeterReceiver(x.ToString()), Guid.NewGuid()))
+            .Select(x => (new TestInMemoryReceiver(), Guid.NewGuid()))
             .ToArray();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddSynchronousGroup<IGreeterReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
 
         // Act
-        var receiversQueue = new ConcurrentQueue<(GreeterReceiver, Guid)>(receivers);
+        var receiversQueue = new ConcurrentQueue<(TestInMemoryReceiver, Guid)>(receivers);
         var waiter = new ManualResetEventSlim(false);
         var tasks = Enumerable.Range(0, 8).Select(_ =>
             Task.Run(() =>
@@ -117,14 +117,14 @@ public class InMemoryGroupTest
     {
         // Arrange
         var receivers = Enumerable.Range(0, 10000)
-            .Select(x => (new GreeterReceiver(x.ToString()), Guid.NewGuid()))
+            .Select(x => (new TestInMemoryReceiver(), Guid.NewGuid()))
             .ToArray();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddGroup<IGreeterReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddGroup<ITestReceiver>("MyGroup");
 
         // Act
-        var receiversQueue = new ConcurrentQueue<(GreeterReceiver, Guid)>(receivers);
+        var receiversQueue = new ConcurrentQueue<(TestInMemoryReceiver, Guid)>(receivers);
         var waiter = new ManualResetEventSlim(false);
         var tasks = Enumerable.Range(0, 8).Select(_ =>
                 Task.Run(async () =>

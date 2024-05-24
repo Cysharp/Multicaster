@@ -10,7 +10,7 @@ public class RemoteGroupClientResultTest
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
-        var pendingTasks = new RemoteClientResultPendingTaskRegistry(TimeSpan.FromMilliseconds(500));
+        var pendingTasks = new RemoteClientResultPendingTaskRegistry(TimeSpan.FromMilliseconds(500)); // Use the specified timeout period.
 
         var receiverWriterA = new TestRemoteReceiverWriter();
         var proxy = proxyFactory.CreateDirect<ITestReceiver>(receiverWriterA, serializer, pendingTasks);
@@ -21,8 +21,10 @@ public class RemoteGroupClientResultTest
         Assert.NotEmpty(receiverWriterA.Written);
         Assert.Equal(1, pendingTasks.Count);
 
+        // Wait for timeout...
         await Task.Delay(TimeSpan.FromMilliseconds(750));
 
+        // The task should be canceled by timeout and removed from pending tasks.
         Assert.True(task.IsCompleted);
         await Assert.ThrowsAsync<TaskCanceledException>(async () => await task);
         Assert.Equal(0, pendingTasks.Count);
