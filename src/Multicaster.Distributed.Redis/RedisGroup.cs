@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Immutable;
+
+using Cysharp.Runtime.Multicast.Internal;
 using Cysharp.Runtime.Multicast.Remoting;
 
 using MessagePack;
@@ -53,7 +55,7 @@ internal class RedisGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>
 
         public void Write(ReadOnlyMemory<byte> payload)
         {
-            var bufferWriter = new ArrayBufferWriter<byte>();
+            using var bufferWriter = ArrayPoolBufferWriter.RentThreadStaticWriter();
             var writer = new MessagePackWriter(bufferWriter);
 
             // redis-format: [[excludes], [targets], [raw-body]]
