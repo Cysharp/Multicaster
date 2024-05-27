@@ -9,8 +9,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Multicaster.Tests", "test\M
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7ED9EEF8-6BF3-4F69-BD7E-D1B25905BD30}"
 	ProjectSection(SolutionItems) = preProject
+		Directory.Build.props = Directory.Build.props
 		README.md = README.md
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Multicaster.Distributed.Redis", "src\Multicaster.Distributed.Redis\Multicaster.Distributed.Redis.csproj", "{FCDE1785-7AFE-4329-91F9-A4CB96991D05}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Multicaster.Distributed.Redis.Tests", "test\Multicaster.Distributed.Redis.Tests\Multicaster.Distributed.Redis.Tests.csproj", "{0119F168-1D09-46DE-8E2B-75FF29DA4ABB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,6 +31,14 @@ Global
 		{3B15E8B1-FEC5-49C0-ABDE-4399AA95E346}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3B15E8B1-FEC5-49C0-ABDE-4399AA95E346}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3B15E8B1-FEC5-49C0-ABDE-4399AA95E346}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FCDE1785-7AFE-4329-91F9-A4CB96991D05}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FCDE1785-7AFE-4329-91F9-A4CB96991D05}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FCDE1785-7AFE-4329-91F9-A4CB96991D05}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FCDE1785-7AFE-4329-91F9-A4CB96991D05}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0119F168-1D09-46DE-8E2B-75FF29DA4ABB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0119F168-1D09-46DE-8E2B-75FF29DA4ABB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0119F168-1D09-46DE-8E2B-75FF29DA4ABB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0119F168-1D09-46DE-8E2B-75FF29DA4ABB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
