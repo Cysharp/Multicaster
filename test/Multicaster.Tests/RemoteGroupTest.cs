@@ -4,10 +4,9 @@ using System.Text;
 using System.Text.Json;
 
 using Cysharp.Runtime.Multicast;
+using Cysharp.Runtime.Multicast.InMemory;
 using Cysharp.Runtime.Multicast.Internal;
 using Cysharp.Runtime.Multicast.Remoting;
-
-using static Multicaster.Tests.TestJsonRemoteSerializer;
 
 namespace Multicaster.Tests;
 
@@ -18,12 +17,13 @@ public class RemoteGroupTest
     {
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var proxyFactoryInMemory = DynamicInMemoryProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
         var pendingTasks = new RemoteClientResultPendingTaskRegistry();
 
         var receiverA = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
         var receiverB = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
-        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactory, serializer, pendingTasks);
+        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
         var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
 
         // Act
@@ -42,6 +42,7 @@ public class RemoteGroupTest
     {
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var proxyFactoryInMemory = DynamicInMemoryProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
         var pendingTasks = new RemoteClientResultPendingTaskRegistry();
 
@@ -50,7 +51,7 @@ public class RemoteGroupTest
         var receiverC = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
         var receiverD = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
 
-        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactory, serializer, pendingTasks);
+        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
         var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
         group.Add(receiverA.Id, receiverA.Proxy);
         group.Add(receiverB.Id, receiverB.Proxy);
@@ -75,6 +76,7 @@ public class RemoteGroupTest
     {
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var proxyFactoryInMemory = DynamicInMemoryProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
         var pendingTasks = new RemoteClientResultPendingTaskRegistry();
 
@@ -82,7 +84,7 @@ public class RemoteGroupTest
             .Select(x => TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks))
             .ToArray();
 
-        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactory, serializer, pendingTasks);
+        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
         var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
 
         // Act
@@ -112,13 +114,14 @@ public class RemoteGroupTest
     {
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var proxyFactoryInMemory = DynamicInMemoryProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
         var pendingTasks = new RemoteClientResultPendingTaskRegistry();
 
         var receiverA = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
         var receiverB = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
 
-        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactory, serializer, pendingTasks);
+        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
         var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
         group.Add(receiverA.Id, receiverA.Proxy);
         group.Add(receiverB.Id, receiverB.Proxy);
@@ -127,8 +130,8 @@ public class RemoteGroupTest
         group.All.Parameter_Zero();
 
         // Assert
-        Assert.Equal([JsonSerializer.Serialize(new SerializedInvocation(nameof(ITestReceiver.Parameter_Zero), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Zero)), null, Array.Empty<object>()))], receiverA.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new SerializedInvocation(nameof(ITestReceiver.Parameter_Zero), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Zero)), null, Array.Empty<object>()))], receiverB.Writer.Written);
+        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Zero), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Zero)), null, Array.Empty<object>()))], receiverA.Writer.Written);
+        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Zero), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Zero)), null, Array.Empty<object>()))], receiverB.Writer.Written);
         Assert.Equal(1, serializer.SerializeInvocationCallCount);
     }
 
@@ -137,13 +140,14 @@ public class RemoteGroupTest
     {
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var proxyFactoryInMemory = DynamicInMemoryProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
         var pendingTasks = new RemoteClientResultPendingTaskRegistry();
 
         var receiverA = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
         var receiverB = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
 
-        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactory, serializer, pendingTasks);
+        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
         var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
         group.Add(receiverA.Id, receiverA.Proxy);
         group.Add(receiverB.Id, receiverB.Proxy);
@@ -152,8 +156,8 @@ public class RemoteGroupTest
         group.All.Parameter_Many(1234, "Hello", true, 9876543210L);
 
         // Assert
-        Assert.Equal([JsonSerializer.Serialize(new SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverA.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverB.Writer.Written);
+        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverA.Writer.Written);
+        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverB.Writer.Written);
         Assert.Equal(1, serializer.SerializeInvocationCallCount);
     }
 
@@ -162,6 +166,7 @@ public class RemoteGroupTest
     {
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var proxyFactoryInMemory = DynamicInMemoryProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
         var pendingTasks = new RemoteClientResultPendingTaskRegistry();
 
@@ -170,7 +175,7 @@ public class RemoteGroupTest
         var receiverC = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
         var receiverD = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
 
-        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactory, serializer, pendingTasks);
+        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
         var groupA = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroupA");
         var groupB = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroupB");
         groupA.Add(receiverA.Id, receiverA.Proxy);
@@ -183,10 +188,10 @@ public class RemoteGroupTest
         groupB.All.Parameter_Two(4321, "Konnichiwa");
 
         // Assert
-        Assert.Equal([JsonSerializer.Serialize(new SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverA.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverB.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new SerializedInvocation(nameof(ITestReceiver.Parameter_Two), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Two)), null, [4321, "Konnichiwa"]))], receiverC.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new SerializedInvocation(nameof(ITestReceiver.Parameter_Two), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Two)), null, [4321, "Konnichiwa"]))], receiverD.Writer.Written);
+        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverA.Writer.Written);
+        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverB.Writer.Written);
+        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Two), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Two)), null, [4321, "Konnichiwa"]))], receiverC.Writer.Written);
+        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Two), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Two)), null, [4321, "Konnichiwa"]))], receiverD.Writer.Written);
         Assert.Equal(2, serializer.SerializeInvocationCallCount);
     }
 
@@ -196,6 +201,7 @@ public class RemoteGroupTest
     {
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var proxyFactoryInMemory = DynamicInMemoryProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
         var pendingTasks = new RemoteClientResultPendingTaskRegistry();
 
@@ -204,7 +210,7 @@ public class RemoteGroupTest
         var receiverC = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
         var receiverD = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
 
-        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactory, serializer, pendingTasks);
+        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
         var groupA = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroupA");
         groupA.Add(receiverA.Id, receiverA.Proxy);
         groupA.Add(receiverB.Id, receiverB.Proxy);
@@ -216,10 +222,10 @@ public class RemoteGroupTest
 
         // Assert
         Assert.Null(ex);
-        Assert.Equal([JsonSerializer.Serialize(new SerializedInvocation(nameof(ITestReceiver.Throw), FNV1A32.GetHashCode(nameof(ITestReceiver.Throw)), null, Array.Empty<object>()))], receiverA.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new SerializedInvocation(nameof(ITestReceiver.Throw), FNV1A32.GetHashCode(nameof(ITestReceiver.Throw)), null, Array.Empty<object>()))], receiverB.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new SerializedInvocation(nameof(ITestReceiver.Throw), FNV1A32.GetHashCode(nameof(ITestReceiver.Throw)), null, Array.Empty<object>()))], receiverC.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new SerializedInvocation(nameof(ITestReceiver.Throw), FNV1A32.GetHashCode(nameof(ITestReceiver.Throw)), null, Array.Empty<object>()))], receiverD.Writer.Written);
+        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Throw), FNV1A32.GetHashCode(nameof(ITestReceiver.Throw)), null, Array.Empty<object>()))], receiverA.Writer.Written);
+        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Throw), FNV1A32.GetHashCode(nameof(ITestReceiver.Throw)), null, Array.Empty<object>()))], receiverB.Writer.Written);
+        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Throw), FNV1A32.GetHashCode(nameof(ITestReceiver.Throw)), null, Array.Empty<object>()))], receiverC.Writer.Written);
+        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Throw), FNV1A32.GetHashCode(nameof(ITestReceiver.Throw)), null, Array.Empty<object>()))], receiverD.Writer.Written);
         Assert.Equal(1, serializer.SerializeInvocationCallCount);
     }
 
@@ -228,6 +234,7 @@ public class RemoteGroupTest
     {
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var proxyFactoryInMemory = DynamicInMemoryProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
         var pendingTasks = new RemoteClientResultPendingTaskRegistry();
 
@@ -236,7 +243,7 @@ public class RemoteGroupTest
         var receiverC = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
         var receiverD = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
 
-        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactory, serializer, pendingTasks);
+        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
 
         var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
         group.Add(receiverA.Id, receiverA.Proxy);
@@ -249,9 +256,9 @@ public class RemoteGroupTest
 
         // Assert
         Assert.Equal([], receiverA.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverB.Writer.Written);
+        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverB.Writer.Written);
         Assert.Equal([], receiverC.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverD.Writer.Written);
+        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverD.Writer.Written);
         Assert.Equal(1, serializer.SerializeInvocationCallCount);
     }
 
@@ -260,6 +267,7 @@ public class RemoteGroupTest
     {
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var proxyFactoryInMemory = DynamicInMemoryProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
         var pendingTasks = new RemoteClientResultPendingTaskRegistry();
 
@@ -268,7 +276,7 @@ public class RemoteGroupTest
         var receiverC = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
         var receiverD = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
 
-        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactory, serializer, pendingTasks);
+        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
 
         var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
         group.Add(receiverA.Id, receiverA.Proxy);
@@ -280,9 +288,9 @@ public class RemoteGroupTest
         group.Only([receiverA.Id, receiverC.Id]).Parameter_Many(1234, "Hello", true, 9876543210L);
 
         // Assert
-        Assert.Equal([JsonSerializer.Serialize(new SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverA.Writer.Written);
+        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverA.Writer.Written);
         Assert.Equal([], receiverB.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverC.Writer.Written);
+        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverC.Writer.Written);
         Assert.Equal([], receiverD.Writer.Written);
         Assert.Equal(1, serializer.SerializeInvocationCallCount);
     }
@@ -292,6 +300,7 @@ public class RemoteGroupTest
     {
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var proxyFactoryInMemory = DynamicInMemoryProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
         var pendingTasks = new RemoteClientResultPendingTaskRegistry();
 
@@ -300,7 +309,7 @@ public class RemoteGroupTest
         var receiverC = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
         var receiverD = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
 
-        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactory, serializer, pendingTasks);
+        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
         var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
         group.Add(receiverA.Id, receiverA.Proxy);
         group.Add(receiverB.Id, receiverB.Proxy);
@@ -312,7 +321,7 @@ public class RemoteGroupTest
 
         // Assert
         Assert.Equal([], receiverA.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverB.Writer.Written);
+        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverB.Writer.Written);
         Assert.Equal([], receiverC.Writer.Written);
         Assert.Equal([], receiverD.Writer.Written);
         Assert.Equal(1, serializer.SerializeInvocationCallCount);
@@ -323,6 +332,7 @@ public class RemoteGroupTest
     {
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var proxyFactoryInMemory = DynamicInMemoryProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
         var pendingTasks = new RemoteClientResultPendingTaskRegistry();
 
@@ -331,7 +341,7 @@ public class RemoteGroupTest
         var receiverC = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
         var receiverD = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
 
-        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactory, serializer, pendingTasks);
+        IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
         var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
         group.Add(receiverA.Id, receiverA.Proxy);
         group.Add(receiverB.Id, receiverB.Proxy);
@@ -347,6 +357,43 @@ public class RemoteGroupTest
         Assert.Equal([], receiverC.Writer.Written);
         Assert.Equal([], receiverD.Writer.Written);
         Assert.Equal(1, serializer.SerializeInvocationCallCount);
+    }
+
+    [Fact]
+    public void Groups_Created()
+    {
+        // Arrange
+        var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var proxyFactoryInMemory = DynamicInMemoryProxyFactory.Instance;
+        var serializer = new TestJsonRemoteSerializer();
+        var pendingTasks = new RemoteClientResultPendingTaskRegistry();
+
+        var groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
+
+        // Act
+        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+
+        // Assert
+        Assert.Single(groupProvider.AsPrivateProxy()._groups);
+    }
+
+    [Fact]
+    public void Groups_Disposed()
+    {
+        // Arrange
+        var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var proxyFactoryInMemory = DynamicInMemoryProxyFactory.Instance;
+        var serializer = new TestJsonRemoteSerializer();
+        var pendingTasks = new RemoteClientResultPendingTaskRegistry();
+
+        var groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
+
+        // Act
+        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        group.Dispose();
+
+        // Assert
+        Assert.Empty(groupProvider.AsPrivateProxy()._groups);
     }
 }
 
