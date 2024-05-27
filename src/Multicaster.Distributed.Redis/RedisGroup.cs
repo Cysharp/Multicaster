@@ -97,6 +97,10 @@ internal class RedisGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>
     public void Dispose()
     {
         if (_disposed) return;
+        if (_messageQueue is not null)
+        {
+            _messageQueue.Unsubscribe();
+        }
         _disposed = true;
     }
 
