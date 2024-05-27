@@ -14,49 +14,62 @@ public class InMemoryGroupProvider : IMulticastGroupProvider
     }
 
     public IMulticastAsyncGroup<T> GetOrAddGroup<T>(string name)
-        => (IMulticastAsyncGroup<T>)_groups.GetOrAdd((typeof(T), name), _ => new InMemoryGroup<T>(_proxyFactory));
+        => (IMulticastAsyncGroup<T>)_groups.GetOrAdd((typeof(T), name), _ => new InMemoryGroup<T>(name, _proxyFactory, Remove));
 
     public IMulticastSyncGroup<T> GetOrAddSynchronousGroup<T>(string name)
-        => (IMulticastSyncGroup<T>)_groups.GetOrAdd((typeof(T), name), _ => new InMemoryGroup<T>(_proxyFactory));
+        => (IMulticastSyncGroup<T>)_groups.GetOrAdd((typeof(T), name), _ => new InMemoryGroup<T>(name, _proxyFactory, Remove));
+
+    private void Remove<T>(InMemoryGroup<T> group)
+        => _groups.Remove((typeof(T), group.Name), out _);
 }
 
 internal class InMemoryGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>
 {
-    private readonly ConcurrentDictionary<Guid, T> _receivers = new();
+    private readonly Action<InMemoryGroup<T>> _disposeAction;
+    private readonly string _name;
     private readonly IInMemoryProxyFactory _proxyFactory;
+    private readonly ConcurrentDictionary<Guid, T> _receivers = new();
+    private bool _disposed;
 
     public T All { get; }
 
-    public InMemoryGroup(IInMemoryProxyFactory proxyFactory)
+    internal string Name => _name;
+
+    public InMemoryGroup(string name, IInMemoryProxyFactory proxyFactory, Action<InMemoryGroup<T>> disposeAction)
     {
+        _name = name;
         _proxyFactory = proxyFactory;
+        _disposeAction = disposeAction;
         All = _proxyFactory.Create(_receivers);
     }
 
     public T Except(ImmutableArray<Guid> excludes)
     {
+        ThrowIfDisposed();
         return _proxyFactory.Except(_receivers, excludes);
     }
 
     public T Only(ImmutableArray<Guid> targets)
     {
+        ThrowIfDisposed();
         return _proxyFactory.Only(_receivers, targets);
     }
 
     public T Single(Guid target)
     {
+        ThrowIfDisposed();
         return _proxyFactory.Only(_receivers, ImmutableArray<Guid>.Empty.Add(target));
     }
 
     public ValueTask AddAsync(Guid key, T receiver, CancellationToken cancellationToken = default)
     {
-        _receivers[key] = receiver;
+        Add(key, receiver);
         return default;
     }
 
     public ValueTask RemoveAsync(Guid key, CancellationToken cancellationToken = default)
     {
-        _receivers.Remove(key, out _);
+        Remove(key);
         return default;
     }
 
@@ -64,11 +77,32 @@ internal class InMemoryGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T
         => ValueTask.FromResult(_receivers.Count);
 
     public void Add(Guid key, T receiver)
-        => _receivers.TryAdd(key, receiver);
+    {
+        ThrowIfDisposed();
+        _receivers.TryAdd(key, receiver);
+    }
 
     public void Remove(Guid key)
-        => _receivers.TryRemove(key, out _);
+    {
+        ThrowIfDisposed();
+        _receivers.TryRemove(key, out _);
+    }
 
     public int Count()
-        => _receivers.Count;
+    {
+        ThrowIfDisposed();
+        return _receivers.Count;
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposeAction(this);
+        _disposed = true;
+    }
+
+    private void ThrowIfDisposed()
+    {
+        if (_disposed) throw new ObjectDisposedException(nameof(InMemoryGroup<T>));
+    }
 }

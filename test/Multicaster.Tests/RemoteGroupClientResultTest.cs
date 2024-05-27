@@ -62,7 +62,7 @@ public class RemoteGroupClientResultTest
 
         // The task should be completed.
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await task);
-        Assert.Equal(ex.Message, "Something went wrong.");
+        Assert.Equal("Something went wrong.", ex.Message);
         Assert.Equal(0, pendingTasks.Count);
     }
 

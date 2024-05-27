@@ -587,6 +587,43 @@ public class InMemoryGroupTest
         ], receiverB.Received);
     }
 
+    [Fact]
+    public void Groups_Created()
+    {
+        // Arrange
+        var receiverA = new TestInMemoryReceiver();
+        var receiverIdA = Guid.NewGuid();
+        var receiverB = new TestInMemoryReceiver();
+        var receiverIdB = Guid.NewGuid();
+
+        var groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
+
+        // Act
+        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+
+        // Assert
+        Assert.Single(groupProvider.AsPrivateProxy()._groups);
+    }
+
+    [Fact]
+    public void Groups_Disposed()
+    {
+        // Arrange
+        var receiverA = new TestInMemoryReceiver();
+        var receiverIdA = Guid.NewGuid();
+        var receiverB = new TestInMemoryReceiver();
+        var receiverIdB = Guid.NewGuid();
+
+        var groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
+
+        // Act
+        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        group.Dispose();
+
+        // Assert
+        Assert.Empty(groupProvider.AsPrivateProxy()._groups);
+    }
+
     public interface IGreeterReceiver
     {
         void OnMessage(string name, string message);

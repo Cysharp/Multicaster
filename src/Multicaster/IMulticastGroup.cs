@@ -10,14 +10,14 @@ public interface IMulticastGroup<TReceiver>
     TReceiver Single(Guid target);
 }
 
-public interface IMulticastAsyncGroup<TReceiver> : IMulticastGroup<TReceiver>
+public interface IMulticastAsyncGroup<TReceiver> : IMulticastGroup<TReceiver>, IDisposable
 {
     ValueTask AddAsync(Guid key, TReceiver receiver, CancellationToken cancellationToken = default);
     ValueTask RemoveAsync(Guid key, CancellationToken cancellationToken = default);
     ValueTask<int> CountAsync(CancellationToken cancellationToken = default);
 }
 
-public interface IMulticastSyncGroup<TReceiver> : IMulticastGroup<TReceiver>
+public interface IMulticastSyncGroup<TReceiver> : IMulticastGroup<TReceiver>, IDisposable
 {
     void Add(Guid key, TReceiver receiver);
     void Remove(Guid key);
