@@ -246,7 +246,7 @@ public class NatsGroupTest
         groupB2.Add(receiverD.Id, receiverD.Proxy);
 
         // Wait for subscriptions to be established.
-        await Task.Delay(250);
+        await Task.Delay(1000);
 
         // Act
         groupA1.All.Parameter_Many(1234, "Hello via GroupA; Area=1", true, 9876543210L);
@@ -254,7 +254,7 @@ public class NatsGroupTest
         groupA2.All.Parameter_Many(5678, "Hey via GroupA; Area=2", false, 1234567890L);
         groupB2.All.Parameter_Two(8765, "Hi via GroupB; Area=2");
         // We need to wait to receive the message from NATS.
-        await Task.Delay(250);
+        await Task.Delay(100);
 
         // Assert
         Assert.Equal([
