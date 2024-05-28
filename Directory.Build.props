@@ -1,8 +1,45 @@
-<Project>
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <WarningsAsErrors>$(WarningsAsErrors);nullable</WarningsAsErrors>
     <LangVersion>12</LangVersion>
+
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)\src\Multicaster\opensource.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
+
+  <!-- Prevent local path leakage by artifacts -->
+  <PropertyGroup>
+    <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
+    <PathMap>$(RepoRoot)=.</PathMap>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- NuGet Package Information -->
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <Company>Cysharp</Company>
+    <Authors>Cysharp</Authors>
+    <Copyright>© Cysharp, Inc.</Copyright>
+    <PackageProjectUrl>https://github.com/Cysharp/Multicaster</PackageProjectUrl>
+    <RepositoryUrl>$(PackageProjectUrl)</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageIcon>Icon.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)\README.md" Pack="true" PackagePath="/" />
+    <None Include="$(MSBuildThisFileDirectory)\src\Multicaster\Icon.png" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <!--
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="all"/>
+  </ItemGroup>
+  -->
 </Project>
