@@ -4,8 +4,8 @@
     <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>Cysharp.Runtime.Multicast.Distributed.Redis</RootNamespace>
-    <AssemblyName>Cysharp.Runtime.Multicaster.Distributed.Redis</AssemblyName>
+    <RootNamespace>Cysharp.Runtime.Multicast.Distributed.Nats</RootNamespace>
+    <AssemblyName>Cysharp.Runtime.Multicaster.Distributed.Nats</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,7 +15,7 @@
   <ItemGroup>
     <PackageReference Include="MessagePack" Version="2.5.140" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
-    <PackageReference Include="StackExchange.Redis" Version="2.7.33" />
+    <PackageReference Include="NATS.Net" Version="2.2.2" />
   </ItemGroup>
 
   <ItemGroup>

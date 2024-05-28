@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
 
 using Cysharp.Runtime.Multicast.Internal;
@@ -17,7 +18,7 @@ internal class RedisGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>
     private readonly IRemoteSerializer _serializer;
     private readonly ISubscriber _subscriber;
     private readonly RedisChannel _channel;
-    private readonly Dictionary<Guid, IRemoteReceiverWriter> _receivers = new();
+    private readonly ConcurrentDictionary<Guid, IRemoteReceiverWriter> _receivers = new();
     private readonly SemaphoreSlim _lock = new(1);
 
     private ChannelMessageQueue? _messageQueue;
@@ -120,9 +121,7 @@ internal class RedisGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            _receivers[key] = directReceiverWriter;
-
-            if (_receivers.Count == 1)
+            if (_receivers.TryAdd(key, directReceiverWriter) && _receivers.Count == 1)
             {
                 await SubscribeAsync().ConfigureAwait(false);
             }
@@ -140,9 +139,7 @@ internal class RedisGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            _receivers.Remove(key);
-
-            if (_receivers.Count == 0)
+            if (_receivers.Remove(key, out _) && _receivers.Count == 0)
             {
                 await UnsubscribeAsync().ConfigureAwait(false);
             }
@@ -232,8 +229,7 @@ internal class RedisGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>
         _lock.Wait();
         try
         {
-            _receivers[key] = directReceiverWriter;
-            if (_receivers.Count == 1)
+            if (_receivers.TryAdd(key, directReceiverWriter) && _receivers.Count == 1)
             {
                 Subscribe();
             }
@@ -249,8 +245,7 @@ internal class RedisGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>
         _lock.Wait();
         try
         {
-            _receivers.Remove(key);
-            if (_receivers.Count == 0)
+            if (_receivers.Remove(key, out _) && _receivers.Count == 0)
             {
                 Unsubscribe();
             }
