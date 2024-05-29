@@ -67,6 +67,8 @@ receiverA.OnMessage("DirectMessage", "Sent a message to the receiver directly.")
 - `TReceiver Except(ImmutableArray<Guid> excludes);`
 - `TReceiver Only(ImmutableArray<Guid> targets);`
 - `TReceiver Single(Guid target);`
+- `void Dispose()`
+    - Dispose and unregister the group from a group provider.
 
 ### `IMulticastAsyncGroup<T>` interface (implements `IMulticastGroup<T>`)
 - `ValueTask AddAsync(Guid key, TReceiver receiver, CancellationToken cancellationToken = default);`
@@ -77,3 +79,12 @@ receiverA.OnMessage("DirectMessage", "Sent a message to the receiver directly.")
 - `void Add(Guid key, TReceiver receiver);`
 - `void Remove(Guid key);`
 - `int Count();`
+
+## Transports and supported features
+
+| Transport | Multicast | Synchronous | Count/CountAsync | Client Results |
+| -- | -- | -- | -- | -- |
+| InMemory | ✔️ | ✔️ | ✔️ | ✔️ |
+| Remote (InMemory) | ✔️ | ✔️ | ✔️ | ✔️ |
+| Redis | ✔️ | ✔️ | - | - |
+| NATS | ✔️ | ✔️ | - | - |
