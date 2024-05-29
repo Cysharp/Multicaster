@@ -12,7 +12,7 @@ using StackExchange.Redis;
 
 namespace Cysharp.Runtime.Multicast.Distributed.Redis;
 
-internal class RedisGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>
+internal class RedisGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>, IDistributedGroup
 {
     private readonly IRemoteProxyFactory _proxyFactory;
     private readonly IRemoteSerializer _serializer;

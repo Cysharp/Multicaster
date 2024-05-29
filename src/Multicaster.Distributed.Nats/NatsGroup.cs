@@ -8,7 +8,7 @@ using NATS.Client.Core;
 
 namespace Cysharp.Runtime.Multicast.Distributed.Nats;
 
-internal class NatsGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>
+internal class NatsGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>, IDistributedGroup
 {
     private readonly NatsConnection _connection;
     private readonly IRemoteProxyFactory _proxyFactory;

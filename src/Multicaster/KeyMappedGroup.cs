@@ -1,5 +1,7 @@
 ﻿using System.Collections.Concurrent;
 
+using Cysharp.Runtime.Multicast.Distributed;
+
 namespace Cysharp.Runtime.Multicast;
 
 public class KeyMappedAsyncGroup<TKey, TReceiver>
@@ -10,6 +12,7 @@ public class KeyMappedAsyncGroup<TKey, TReceiver>
 
     public KeyMappedAsyncGroup(IMulticastAsyncGroup<TReceiver> underlyingGroup)
     {
+        if (underlyingGroup is IDistributedGroup) throw new NotSupportedException("DistributedGroup is not supported.");
         _underlyingGroup = underlyingGroup;
     }
 
@@ -64,6 +67,7 @@ public class KeyMappedSyncGroup<TKey, TReceiver> where TKey : notnull
 
     public KeyMappedSyncGroup(IMulticastSyncGroup<TReceiver> underlyingGroup)
     {
+        if (underlyingGroup is IDistributedGroup) throw new NotSupportedException("DistributedGroup is not supported.");
         _underlyingGroup = underlyingGroup;
     }
 
