@@ -42,7 +42,7 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
                 il.Emit(OpCodes.Ret);
             }
 
-            foreach (var method in typeof(T).GetMethods())
+            foreach (var method in typeof(T).GetInterfaces().Append(typeof(T)).SelectMany(x => x.GetMethods()))
             {
                 var methodBuilder = typeBuilder.DefineMethod(
                     method.Name,

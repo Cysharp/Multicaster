@@ -37,7 +37,7 @@ public class DynamicInMemoryProxyFactory : IInMemoryProxyFactory
             // _Thunk{Method} methods
             // {Method} methods
             var thunkMethods = new List<(Type[] DelegateParamTypes, FieldBuilder FieldDelegate, Type DelegateType, MethodBuilder MethodThunk)>();
-            foreach (var method in typeof(T).GetMethods())
+            foreach (var method in typeof(T).GetInterfaces().Append(typeof(T)).SelectMany(x => x.GetMethods()))
             {
                 if (method.ReturnType == typeof(void))
                 {

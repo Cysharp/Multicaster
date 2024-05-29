@@ -228,4 +228,57 @@ public class DynamicRemoteProxyFactoryTest
 
         Assert.Equal(1, serializer.SerializeInvocationCallCount);
     }
+
+    [Fact]
+    public void Inherited_Create()
+    {
+        // Arrange
+        var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var serializer = new TestJsonRemoteSerializer();
+        var pendingTasks = new RemoteClientResultPendingTaskRegistry();
+
+        var receiverWriterA = new TestRemoteReceiverWriter();
+        var receiverWriterB = new TestRemoteReceiverWriter();
+        var receivers = new ConcurrentDictionary<Guid, IRemoteReceiverWriter>();
+        receivers.TryAdd(Guid.NewGuid(), receiverWriterA);
+        receivers.TryAdd(Guid.NewGuid(), receiverWriterB);
+
+        // Act
+        var proxy = proxyFactory.Create<ITestInheritedReceiver3>(receivers, serializer, pendingTasks);
+    }
+
+    [Fact]
+    public void Inherited_Call()
+    {
+        // Arrange
+        var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var serializer = new TestJsonRemoteSerializer();
+        var pendingTasks = new RemoteClientResultPendingTaskRegistry();
+
+        var receiverWriterA = new TestRemoteReceiverWriter();
+        var receiverWriterB = new TestRemoteReceiverWriter();
+        var receivers = new ConcurrentDictionary<Guid, IRemoteReceiverWriter>();
+        receivers.TryAdd(Guid.NewGuid(), receiverWriterA);
+        receivers.TryAdd(Guid.NewGuid(), receiverWriterB);
+
+        var proxy = proxyFactory.Create<ITestInheritedReceiver3>(receivers, serializer, pendingTasks);
+
+        // Act
+        proxy.Parameter_Zero();
+        proxy.Parameter_One(1234);
+        proxy.Parameter_Many(1234, "Hello", true);
+
+        // Assert
+        Assert.Equal([
+            """{"MethodName":"Parameter_Zero","MethodId":1994667803,"MessageId":null,"Arguments":[]}""",
+            """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""",
+            """{"MethodName":"Parameter_Many","MethodId":1287160778,"MessageId":null,"Arguments":[1234,"Hello",true]}""",
+        ], receiverWriterA.Written);
+        Assert.Equal([
+            """{"MethodName":"Parameter_Zero","MethodId":1994667803,"MessageId":null,"Arguments":[]}""",
+            """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""",
+            """{"MethodName":"Parameter_Many","MethodId":1287160778,"MessageId":null,"Arguments":[1234,"Hello",true]}""",
+        ], receiverWriterB.Written);
+        Assert.Equal(3, serializer.SerializeInvocationCallCount);
+    }
 }
