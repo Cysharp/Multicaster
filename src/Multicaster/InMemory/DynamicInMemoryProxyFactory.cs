@@ -27,6 +27,7 @@ public class DynamicInMemoryProxyFactory : IInMemoryProxyFactory
         where TKey : IEquatable<TKey>
     {
         private static readonly Type _type;
+        private static readonly Func<IReceiverHolder<TKey, T>, ImmutableArray<TKey>, ImmutableArray<TKey>?, T> _factory;
 
         static Core()
         {
@@ -201,12 +202,29 @@ public class DynamicInMemoryProxyFactory : IInMemoryProxyFactory
                 il.Emit(OpCodes.Ret);
             }
 
+            {
+                var createInstanceMethod = typeBuilder.DefineMethod(
+                    "CreateInstance",
+                    MethodAttributes.Private | MethodAttributes.Static,
+                    typeof(T),
+                    [typeof(IReceiverHolder<TKey, T>), typeof(ImmutableArray<TKey>), typeof(ImmutableArray<TKey>?)]
+                );
+                {
+                    var il = createInstanceMethod.GetILGenerator();
+                    il.Emit(OpCodes.Ldarg_0); // receivers
+                    il.Emit(OpCodes.Ldarg_1); // excludes
+                    il.Emit(OpCodes.Ldarg_2); // targets
+                    il.Emit(OpCodes.Newobj, ctor);
+                    il.Emit(OpCodes.Ret);
+                }
+            }
+
             _type = typeBuilder.CreateType()!;
+            _factory = _type.GetMethod("CreateInstance", BindingFlags.Static | BindingFlags.NonPublic)!
+                .CreateDelegate<Func<IReceiverHolder<TKey, T>, ImmutableArray<TKey>, ImmutableArray<TKey>?, T>>();
         }
 
         public static T Create(IReceiverHolder<TKey, T> receivers, ImmutableArray<TKey> excludes, ImmutableArray<TKey>? targets)
-        {
-            return (T)Activator.CreateInstance(_type, [receivers, excludes, targets])!;
-        }
+            => _factory(receivers, excludes, targets);
     }
 }
