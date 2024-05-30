@@ -29,9 +29,12 @@ public interface IMulticastSyncGroup<TKey, TReceiver> : IMulticastGroup<TKey, TR
 
 public static class MulticastGroupExtensions
 {
+    public static TReceiver Except<TKey, TReceiver>(this IMulticastGroup<TKey, TReceiver> group, TKey exclude)
+        where TKey : IEquatable<TKey>
+        => group.Except([exclude]);
     public static TReceiver Except<TKey, TReceiver>(this IMulticastGroup<TKey, TReceiver> group, IReadOnlyList<TKey> excludes)
         where TKey : IEquatable<TKey>
-        => group.Except([..excludes]);
+        => group.Except([.. excludes]);
     public static TReceiver Only<TKey, TReceiver>(this IMulticastGroup<TKey, TReceiver> group, IReadOnlyList<TKey> targets)
         where TKey : IEquatable<TKey>
         => group.Only([..targets]);
