@@ -40,7 +40,7 @@ public class DynamicRemoteProxyFactoryTest
         receivers.TryAdd(Guid.NewGuid(), receiverWriterA);
         receivers.TryAdd(Guid.NewGuid(), receiverWriterB);
 
-        var proxy = proxyFactory.Create<ITestReceiver>(receivers, serializer, pendingTasks);
+        var proxy = proxyFactory.Create<Guid, ITestReceiver>(receivers, serializer, pendingTasks);
 
         // Act
         proxy.Parameter_Zero();
@@ -65,7 +65,7 @@ public class DynamicRemoteProxyFactoryTest
         receivers.TryAdd(Guid.NewGuid(), receiverWriterA);
         receivers.TryAdd(Guid.NewGuid(), receiverWriterB);
 
-        var proxy = proxyFactory.Create<ITestReceiver>(receivers, serializer, pendingTasks);
+        var proxy = proxyFactory.Create<Guid, ITestReceiver>(receivers, serializer, pendingTasks);
 
         // Act
         proxy.Parameter_One(1234);
@@ -90,7 +90,7 @@ public class DynamicRemoteProxyFactoryTest
         receivers.TryAdd(Guid.NewGuid(), receiverWriterA);
         receivers.TryAdd(Guid.NewGuid(), receiverWriterB);
 
-        var proxy = proxyFactory.Create<ITestReceiver>(receivers, serializer, pendingTasks);
+        var proxy = proxyFactory.Create<Guid, ITestReceiver>(receivers, serializer, pendingTasks);
 
         // Act
         proxy.Parameter_Many(1234, "Hello", true, 1234567890L);
@@ -244,7 +244,7 @@ public class DynamicRemoteProxyFactoryTest
         receivers.TryAdd(Guid.NewGuid(), receiverWriterB);
 
         // Act
-        var proxy = proxyFactory.Create<ITestInheritedReceiver3>(receivers, serializer, pendingTasks);
+        var proxy = proxyFactory.Create<Guid, ITestInheritedReceiver3>(receivers, serializer, pendingTasks);
     }
 
     [Fact]
@@ -261,7 +261,7 @@ public class DynamicRemoteProxyFactoryTest
         receivers.TryAdd(Guid.NewGuid(), receiverWriterA);
         receivers.TryAdd(Guid.NewGuid(), receiverWriterB);
 
-        var proxy = proxyFactory.Create<ITestInheritedReceiver3>(receivers, serializer, pendingTasks);
+        var proxy = proxyFactory.Create<Guid, ITestInheritedReceiver3>(receivers, serializer, pendingTasks);
 
         // Act
         proxy.Parameter_Zero();

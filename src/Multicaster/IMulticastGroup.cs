@@ -2,32 +2,37 @@
 
 namespace Cysharp.Runtime.Multicast;
 
-public interface IMulticastGroup<TReceiver>
+public interface IMulticastGroup<TKey, TReceiver>
+    where TKey : IEquatable<TKey>
 {
     TReceiver All { get; }
-    TReceiver Except(ImmutableArray<Guid> excludes);
-    TReceiver Only(ImmutableArray<Guid> targets);
-    TReceiver Single(Guid target);
+    TReceiver Except(ImmutableArray<TKey> excludes);
+    TReceiver Only(ImmutableArray<TKey> targets);
+    TReceiver Single(TKey target);
 }
 
-public interface IMulticastAsyncGroup<TReceiver> : IMulticastGroup<TReceiver>, IDisposable
+public interface IMulticastAsyncGroup<TKey, TReceiver> : IMulticastGroup<TKey, TReceiver>, IDisposable
+    where TKey : IEquatable<TKey>
 {
-    ValueTask AddAsync(Guid key, TReceiver receiver, CancellationToken cancellationToken = default);
-    ValueTask RemoveAsync(Guid key, CancellationToken cancellationToken = default);
+    ValueTask AddAsync(TKey key, TReceiver receiver, CancellationToken cancellationToken = default);
+    ValueTask RemoveAsync(TKey key, CancellationToken cancellationToken = default);
     ValueTask<int> CountAsync(CancellationToken cancellationToken = default);
 }
 
-public interface IMulticastSyncGroup<TReceiver> : IMulticastGroup<TReceiver>, IDisposable
+public interface IMulticastSyncGroup<TKey, TReceiver> : IMulticastGroup<TKey, TReceiver>, IDisposable
+    where TKey : IEquatable<TKey>
 {
-    void Add(Guid key, TReceiver receiver);
-    void Remove(Guid key);
+    void Add(TKey key, TReceiver receiver);
+    void Remove(TKey key);
     int Count();
 }
 
 public static class MulticastGroupExtensions
 {
-    public static TReceiver Except<TReceiver>(this IMulticastGroup<TReceiver> group, IReadOnlyList<Guid> excludes)
+    public static TReceiver Except<TKey, TReceiver>(this IMulticastGroup<TKey, TReceiver> group, IReadOnlyList<Guid> excludes)
+        where TKey : IEquatable<TKey>
         => group.Except([..excludes]);
-    public static TReceiver Only<TReceiver>(this IMulticastGroup<TReceiver> group, IReadOnlyList<Guid> targets)
+    public static TReceiver Only<TKey, TReceiver>(this IMulticastGroup<TKey, TReceiver> group, IReadOnlyList<Guid> targets)
+        where TKey : IEquatable<TKey>
         => group.Only([..targets]);
 }

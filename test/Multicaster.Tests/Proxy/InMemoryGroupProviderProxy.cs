@@ -32,9 +32,9 @@ namespace Multicaster.Tests
         }
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_groups")]
-        static extern ref readonly global::System.Collections.Concurrent.ConcurrentDictionary<(global::System.Type Type, string name), object> ___groups__(global::Cysharp.Runtime.Multicast.InMemory.InMemoryGroupProvider target);
+        static extern ref readonly global::System.Collections.Concurrent.ConcurrentDictionary<(global::System.Type KeyType, global::System.Type ReceiverType, string name), object> ___groups__(global::Cysharp.Runtime.Multicast.InMemory.InMemoryGroupProvider target);
 
-        public ref readonly global::System.Collections.Concurrent.ConcurrentDictionary<(global::System.Type Type, string name), object> _groups => ref ___groups__(this.target);
+        public ref readonly global::System.Collections.Concurrent.ConcurrentDictionary<(global::System.Type KeyType, global::System.Type ReceiverType, string name), object> _groups => ref ___groups__(this.target);
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_proxyFactory")]
         static extern ref readonly global::Cysharp.Runtime.Multicast.InMemory.IInMemoryProxyFactory ___proxyFactory__(global::Cysharp.Runtime.Multicast.InMemory.InMemoryGroupProvider target);
 

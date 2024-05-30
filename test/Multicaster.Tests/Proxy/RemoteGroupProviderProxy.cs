@@ -32,8 +32,8 @@ namespace Multicaster.Tests
         }
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_groups")]
-        static extern ref readonly global::System.Collections.Concurrent.ConcurrentDictionary<(global::System.Type Type, string name), object> ___groups__(global::Cysharp.Runtime.Multicast.Remoting.RemoteGroupProvider target);
-        public ref readonly global::System.Collections.Concurrent.ConcurrentDictionary<(global::System.Type Type, string name), object> _groups => ref ___groups__(this.target);
+        static extern ref readonly global::System.Collections.Concurrent.ConcurrentDictionary<(global::System.Type KeyType, global::System.Type ReceiverType, string name), object> ___groups__(global::Cysharp.Runtime.Multicast.Remoting.RemoteGroupProvider target);
+        public ref readonly global::System.Collections.Concurrent.ConcurrentDictionary<(global::System.Type KeyType, global::System.Type ReceiverType, string name), object> _groups => ref ___groups__(this.target);
     }
 
     internal static class RemoteGroupProviderProxyExtensions

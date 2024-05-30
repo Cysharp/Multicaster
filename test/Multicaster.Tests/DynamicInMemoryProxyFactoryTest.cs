@@ -16,10 +16,10 @@ public class DynamicInMemoryProxyFactoryTest
         var receiverBId = Guid.NewGuid();
 
         // Act
-        var proxy = DynamicInMemoryProxyFactory.Instance.Create<ITestInheritedReceiver3>([
-            KeyValuePair.Create(receiverAId, (ITestInheritedReceiver3)receiverA),
-            KeyValuePair.Create(receiverBId, (ITestInheritedReceiver3)receiverB)
-        ], ImmutableArray<Guid>.Empty, null);
+        var proxy = DynamicInMemoryProxyFactory.Instance.Create<Guid, ITestInheritedReceiver3>(ReceiverHolder.CreateMutableWithInitialReceivers([
+            (receiverAId, (ITestInheritedReceiver3)receiverA),
+            (receiverBId, (ITestInheritedReceiver3)receiverB)
+        ]), ImmutableArray<Guid>.Empty, null);
     }
 
     [Fact]
@@ -31,10 +31,10 @@ public class DynamicInMemoryProxyFactoryTest
         var receiverB = new TestInheritedReceiver();
         var receiverBId = Guid.NewGuid();
 
-        var proxy = DynamicInMemoryProxyFactory.Instance.Create<ITestInheritedReceiver3>([
-            KeyValuePair.Create(receiverAId, (ITestInheritedReceiver3)receiverA),
-            KeyValuePair.Create(receiverBId, (ITestInheritedReceiver3)receiverB)
-        ], ImmutableArray<Guid>.Empty, null);
+        var proxy = DynamicInMemoryProxyFactory.Instance.Create<Guid, ITestInheritedReceiver3>(ReceiverHolder.CreateMutableWithInitialReceivers([
+            (receiverAId, (ITestInheritedReceiver3)receiverA),
+            (receiverBId, (ITestInheritedReceiver3)receiverB)
+        ]), ImmutableArray<Guid>.Empty, null);
 
         // Act
         proxy.Parameter_Zero();

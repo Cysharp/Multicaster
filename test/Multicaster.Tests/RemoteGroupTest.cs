@@ -22,7 +22,7 @@ public class RemoteGroupTest
         var receiverA = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
         var receiverB = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
         IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
 
         // Act
         group.Add(receiverA.Id, receiverA.Proxy);
@@ -50,7 +50,7 @@ public class RemoteGroupTest
         var receiverD = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
 
         IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         group.Add(receiverA.Id, receiverA.Proxy);
         group.Add(receiverB.Id, receiverB.Proxy);
         group.Add(receiverC.Id, receiverC.Proxy);
@@ -83,7 +83,7 @@ public class RemoteGroupTest
             .ToArray();
 
         IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
 
         // Act
         var receiversQueue = new ConcurrentQueue<(TestRemoteReceiverWriter, ITestReceiver, Guid)>(receivers);
@@ -120,7 +120,7 @@ public class RemoteGroupTest
         var receiverB = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
 
         IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         group.Add(receiverA.Id, receiverA.Proxy);
         group.Add(receiverB.Id, receiverB.Proxy);
 
@@ -146,7 +146,7 @@ public class RemoteGroupTest
         var receiverB = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
 
         IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         group.Add(receiverA.Id, receiverA.Proxy);
         group.Add(receiverB.Id, receiverB.Proxy);
 
@@ -174,8 +174,8 @@ public class RemoteGroupTest
         var receiverD = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
 
         IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
-        var groupA = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroupA");
-        var groupB = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroupB");
+        var groupA = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroupA");
+        var groupB = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroupB");
         groupA.Add(receiverA.Id, receiverA.Proxy);
         groupA.Add(receiverB.Id, receiverB.Proxy);
         groupB.Add(receiverC.Id, receiverC.Proxy);
@@ -209,7 +209,7 @@ public class RemoteGroupTest
         var receiverD = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
 
         IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
-        var groupA = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroupA");
+        var groupA = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroupA");
         groupA.Add(receiverA.Id, receiverA.Proxy);
         groupA.Add(receiverB.Id, receiverB.Proxy);
         groupA.Add(receiverC.Id, receiverC.Proxy);
@@ -243,7 +243,7 @@ public class RemoteGroupTest
 
         IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
 
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         group.Add(receiverA.Id, receiverA.Proxy);
         group.Add(receiverB.Id, receiverB.Proxy);
         group.Add(receiverC.Id, receiverC.Proxy);
@@ -276,7 +276,7 @@ public class RemoteGroupTest
 
         IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
 
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         group.Add(receiverA.Id, receiverA.Proxy);
         group.Add(receiverB.Id, receiverB.Proxy);
         group.Add(receiverC.Id, receiverC.Proxy);
@@ -308,7 +308,7 @@ public class RemoteGroupTest
         var receiverD = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
 
         IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         group.Add(receiverA.Id, receiverA.Proxy);
         group.Add(receiverB.Id, receiverB.Proxy);
         group.Add(receiverC.Id, receiverC.Proxy);
@@ -340,7 +340,7 @@ public class RemoteGroupTest
         var receiverD = TestRemoteReceiverHelper.CreateReceiverSet(proxyFactory, serializer, pendingTasks);
 
         IMulticastGroupProvider groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         group.Add(receiverA.Id, receiverA.Proxy);
         group.Add(receiverB.Id, receiverB.Proxy);
         group.Add(receiverC.Id, receiverC.Proxy);
@@ -369,7 +369,7 @@ public class RemoteGroupTest
         var groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
 
         // Act
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
 
         // Assert
         Assert.Single(groupProvider.AsPrivateProxy()._groups);
@@ -387,7 +387,7 @@ public class RemoteGroupTest
         var groupProvider = new RemoteGroupProvider(proxyFactoryInMemory, proxyFactory, serializer, pendingTasks);
 
         // Act
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         group.Dispose();
 
         // Assert

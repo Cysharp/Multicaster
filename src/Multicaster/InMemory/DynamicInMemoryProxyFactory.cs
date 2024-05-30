@@ -17,19 +17,21 @@ public class DynamicInMemoryProxyFactory : IInMemoryProxyFactory
         _moduleBuilder = _assemblyBuilder.DefineDynamicModule("Multicaster");
     }
 
-    public T Create<T>(IEnumerable<KeyValuePair<Guid, T>> receivers, ImmutableArray<Guid> excludes, ImmutableArray<Guid>? targets)
+    public T Create<TKey, T>(IReceiverHolder<TKey, T> receivers, ImmutableArray<TKey> excludes, ImmutableArray<TKey>? targets)
+        where TKey : IEquatable<TKey>
     {
-        return Core<T>.Create(receivers, excludes, targets);
+        return Core<TKey, T>.Create(receivers, excludes, targets);
     }
 
-    static class Core<T>
+    static class Core<TKey, T>
+        where TKey : IEquatable<TKey>
     {
         private static readonly Type _type;
 
         static Core()
         {
-            var typeInMemoryProxyBase = typeof(InMemoryProxyBase<T>);
-            var ctorParameters = new[] { typeof(IEnumerable<KeyValuePair<Guid, T>>), typeof(ImmutableArray<Guid>), typeof(ImmutableArray<Guid>?) };
+            var typeInMemoryProxyBase = typeof(InMemoryProxyBase<TKey, T>);
+            var ctorParameters = new[] { typeof(IReceiverHolder<TKey, T>), typeof(ImmutableArray<TKey>), typeof(ImmutableArray<TKey>?) };
             var typeBuilder = _moduleBuilder.DefineType($"{typeof(T).FullName!.Replace(".", "_")}_Proxy", TypeAttributes.NotPublic, typeInMemoryProxyBase);
             typeBuilder.AddInterfaceImplementation(typeof(T));
 
@@ -66,7 +68,7 @@ public class DynamicInMemoryProxyFactory : IInMemoryProxyFactory
                     }).MakeGenericType(delegateParamTypes);
 
                     // Invoke<T1, T2...>(T1, T2, ..., Action<T, T1, T2...>)
-                    var methodInvoke = typeof(InMemoryProxyBase<T>).GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
+                    var methodInvoke = typeof(InMemoryProxyBase<TKey, T>).GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
                         .Single(x => x.Name == "Invoke" && x.GetGenericArguments().Length == method.GetParameters().Length);
                     if (methodInvoke.ContainsGenericParameters)
                     {
@@ -132,7 +134,7 @@ public class DynamicInMemoryProxyFactory : IInMemoryProxyFactory
                     }).MakeGenericType(delegateParamTypes);
 
                     // InvokeWithResult<TTarget, T1, T2..., TResult>(T1, T2, ..., Func<TTarget, T1, T2..., TResult>)
-                    var methodInvokeWithResult = typeof(InMemoryProxyBase<T>).GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
+                    var methodInvokeWithResult = typeof(InMemoryProxyBase<TKey, T>).GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
                         .Single(x => x.Name == "InvokeWithResult" && x.GetGenericArguments().Length == method.GetParameters().Length + 1)
                         .MakeGenericMethod([..method.GetParameters().Select(x => x.ParameterType), method.ReturnType]);
 
@@ -188,7 +190,7 @@ public class DynamicInMemoryProxyFactory : IInMemoryProxyFactory
             }
 
             var ctorBase = typeInMemoryProxyBase.GetConstructor(BindingFlags.Public | BindingFlags.Instance, ctorParameters)!;
-            var ctor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, [typeof(IEnumerable<KeyValuePair<Guid, T>>), typeof(ImmutableArray<Guid>), typeof(ImmutableArray<Guid>?)]);
+            var ctor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, [typeof(IReceiverHolder<TKey, T>), typeof(ImmutableArray<TKey>), typeof(ImmutableArray<TKey>?)]);
             {
                 var il = ctor.GetILGenerator();
                 il.Emit(OpCodes.Ldarg_0);
@@ -202,7 +204,7 @@ public class DynamicInMemoryProxyFactory : IInMemoryProxyFactory
             _type = typeBuilder.CreateType()!;
         }
 
-        public static T Create(IEnumerable<KeyValuePair<Guid, T>> receivers, ImmutableArray<Guid> excludes, ImmutableArray<Guid>? targets)
+        public static T Create(IReceiverHolder<TKey, T> receivers, ImmutableArray<TKey> excludes, ImmutableArray<TKey>? targets)
         {
             return (T)Activator.CreateInstance(_type, [receivers, excludes, targets])!;
         }

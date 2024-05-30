@@ -3,13 +3,14 @@ using System.Runtime.CompilerServices;
 
 namespace Cysharp.Runtime.Multicast.InMemory;
 
-public abstract class InMemoryProxyBase<T>
+public abstract class InMemoryProxyBase<TKey, T>
+    where TKey : IEquatable<TKey>
 {
-    private readonly IEnumerable<KeyValuePair<Guid, T>> _receivers;
-    private readonly ImmutableArray<Guid> _excludes;
-    private readonly ImmutableArray<Guid>? _targets;
+    private readonly IReceiverHolder<TKey, T> _receivers;
+    private readonly ImmutableArray<TKey> _excludes;
+    private readonly ImmutableArray<TKey>? _targets;
 
-    public InMemoryProxyBase(IEnumerable<KeyValuePair<Guid, T>> receivers, ImmutableArray<Guid> excludes, ImmutableArray<Guid>? targets)
+    public InMemoryProxyBase(IReceiverHolder<TKey, T> receivers, ImmutableArray<TKey> excludes, ImmutableArray<TKey>? targets)
     {
         _receivers = receivers;
         _excludes = excludes;
@@ -18,12 +19,12 @@ public abstract class InMemoryProxyBase<T>
 
     protected void Invoke(Action<T> invoker)
     {
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                invoker(receiver);
+                invoker(receiverRegistration.Receiver);
             }
             catch
             {
@@ -33,12 +34,12 @@ public abstract class InMemoryProxyBase<T>
     }
     protected void Invoke<T1>(T1 arg1, Action<T, T1> invoker)
     {
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                invoker(receiver, arg1);
+                invoker(receiverRegistration.Receiver, arg1);
             }
             catch
             {
@@ -48,12 +49,12 @@ public abstract class InMemoryProxyBase<T>
     }
     protected void Invoke<T1, T2>(T1 arg1, T2 arg2, Action<T, T1, T2> invoker)
     {
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                invoker(receiver, arg1, arg2);
+                invoker(receiverRegistration.Receiver, arg1, arg2);
             }
             catch
             {
@@ -63,12 +64,12 @@ public abstract class InMemoryProxyBase<T>
     }
     protected void Invoke<T1, T2, T3>(T1 arg1, T2 arg2, T3 arg3, Action<T, T1, T2, T3> invoker)
     {
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                invoker(receiver, arg1, arg2, arg3);
+                invoker(receiverRegistration.Receiver, arg1, arg2, arg3);
             }
             catch
             {
@@ -78,12 +79,12 @@ public abstract class InMemoryProxyBase<T>
     }
     protected void Invoke<T1, T2, T3, T4>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, Action<T, T1, T2, T3, T4> invoker)
     {
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                invoker(receiver, arg1, arg2, arg3, arg4);
+                invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4);
             }
             catch
             {
@@ -93,12 +94,12 @@ public abstract class InMemoryProxyBase<T>
     }
     protected void Invoke<T1, T2, T3, T4, T5>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, Action<T, T1, T2, T3, T4, T5> invoker)
     {
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                invoker(receiver, arg1, arg2, arg3, arg4, arg5);
+                invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5);
             }
             catch
             {
@@ -108,12 +109,12 @@ public abstract class InMemoryProxyBase<T>
     }
     protected void Invoke<T1, T2, T3, T4, T5, T6>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, Action<T, T1, T2, T3, T4, T5, T6> invoker)
     {
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                invoker(receiver, arg1, arg2, arg3, arg4, arg5, arg6);
+                invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6);
             }
             catch
             {
@@ -123,12 +124,12 @@ public abstract class InMemoryProxyBase<T>
     }
     protected void Invoke<T1, T2, T3, T4, T5, T6, T7>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, Action<T, T1, T2, T3, T4, T5, T6, T7> invoker)
     {
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                invoker(receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
             }
             catch
             {
@@ -138,12 +139,12 @@ public abstract class InMemoryProxyBase<T>
     }
     protected void Invoke<T1, T2, T3, T4, T5, T6, T7, T8>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, Action<T, T1, T2, T3, T4, T5, T6, T7, T8> invoker)
     {
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                invoker(receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+                invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
             }
             catch
             {
@@ -153,12 +154,12 @@ public abstract class InMemoryProxyBase<T>
     }
     protected void Invoke<T1, T2, T3, T4, T5, T6, T7, T8, T9>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, Action<T, T1, T2, T3, T4, T5, T6, T7, T8, T9> invoker)
     {
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                invoker(receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+                invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
             }
             catch
             {
@@ -168,12 +169,12 @@ public abstract class InMemoryProxyBase<T>
     }
     protected void Invoke<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, Action<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> invoker)
     {
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                invoker(receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
+                invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
             }
             catch
             {
@@ -183,12 +184,12 @@ public abstract class InMemoryProxyBase<T>
     }
     protected void Invoke<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, Action<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> invoker)
     {
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                invoker(receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
+                invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
             }
             catch
             {
@@ -198,12 +199,12 @@ public abstract class InMemoryProxyBase<T>
     }
     protected void Invoke<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, Action<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> invoker)
     {
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                invoker(receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
+                invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
             }
             catch
             {
@@ -213,12 +214,12 @@ public abstract class InMemoryProxyBase<T>
     }
     protected void Invoke<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, Action<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13> invoker)
     {
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                invoker(receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13);
+                invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13);
             }
             catch
             {
@@ -228,12 +229,12 @@ public abstract class InMemoryProxyBase<T>
     }
     protected void Invoke<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, Action<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14> invoker)
     {
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                invoker(receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14);
+                invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14);
             }
             catch
             {
@@ -244,12 +245,12 @@ public abstract class InMemoryProxyBase<T>
     protected TResult InvokeWithResult<TResult>(Func<T, TResult> invoker)
     {
         ThrowIfNotSingle();
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                return invoker(receiver);
+                return invoker(receiverRegistration.Receiver);
             }
             catch
             {
@@ -261,12 +262,12 @@ public abstract class InMemoryProxyBase<T>
     protected TResult InvokeWithResult<T1, TResult>(T1 arg1, Func<T, T1, TResult> invoker)
     {
         ThrowIfNotSingle();
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                return invoker(receiver, arg1);
+                return invoker(receiverRegistration.Receiver, arg1);
             }
             catch
             {
@@ -278,12 +279,12 @@ public abstract class InMemoryProxyBase<T>
     protected TResult InvokeWithResult<T1, T2, TResult>(T1 arg1, T2 arg2, Func<T, T1, T2, TResult> invoker)
     {
         ThrowIfNotSingle();
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                return invoker(receiver, arg1, arg2);
+                return invoker(receiverRegistration.Receiver, arg1, arg2);
             }
             catch
             {
@@ -295,12 +296,12 @@ public abstract class InMemoryProxyBase<T>
     protected TResult InvokeWithResult<T1, T2, T3, TResult>(T1 arg1, T2 arg2, T3 arg3, Func<T, T1, T2, T3, TResult> invoker)
     {
         ThrowIfNotSingle();
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                return invoker(receiver, arg1, arg2, arg3);
+                return invoker(receiverRegistration.Receiver, arg1, arg2, arg3);
             }
             catch
             {
@@ -312,12 +313,12 @@ public abstract class InMemoryProxyBase<T>
     protected TResult InvokeWithResult<T1, T2, T3, T4, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, Func<T, T1, T2, T3, T4, TResult> invoker)
     {
         ThrowIfNotSingle();
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                return invoker(receiver, arg1, arg2, arg3, arg4);
+                return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4);
             }
             catch
             {
@@ -329,12 +330,12 @@ public abstract class InMemoryProxyBase<T>
     protected TResult InvokeWithResult<T1, T2, T3, T4, T5, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, Func<T, T1, T2, T3, T4, T5, TResult> invoker)
     {
         ThrowIfNotSingle();
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                return invoker(receiver, arg1, arg2, arg3, arg4, arg5);
+                return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5);
             }
             catch
             {
@@ -346,12 +347,12 @@ public abstract class InMemoryProxyBase<T>
     protected TResult InvokeWithResult<T1, T2, T3, T4, T5, T6, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, Func<T, T1, T2, T3, T4, T5, T6, TResult> invoker)
     {
         ThrowIfNotSingle();
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                return invoker(receiver, arg1, arg2, arg3, arg4, arg5, arg6);
+                return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6);
             }
             catch
             {
@@ -363,12 +364,12 @@ public abstract class InMemoryProxyBase<T>
     protected TResult InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, Func<T, T1, T2, T3, T4, T5, T6, T7, TResult> invoker)
     {
         ThrowIfNotSingle();
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                return invoker(receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
             }
             catch
             {
@@ -380,12 +381,12 @@ public abstract class InMemoryProxyBase<T>
     protected TResult InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, Func<T, T1, T2, T3, T4, T5, T6, T7, T8, TResult> invoker)
     {
         ThrowIfNotSingle();
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                return invoker(receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+                return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
             }
             catch
             {
@@ -397,12 +398,12 @@ public abstract class InMemoryProxyBase<T>
     protected TResult InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, Func<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult> invoker)
     {
         ThrowIfNotSingle();
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                return invoker(receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+                return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
             }
             catch
             {
@@ -414,12 +415,12 @@ public abstract class InMemoryProxyBase<T>
     protected TResult InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, Func<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult> invoker)
     {
         ThrowIfNotSingle();
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                return invoker(receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
+                return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
             }
             catch
             {
@@ -431,12 +432,12 @@ public abstract class InMemoryProxyBase<T>
     protected TResult InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, Func<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TResult> invoker)
     {
         ThrowIfNotSingle();
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                return invoker(receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
+                return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
             }
             catch
             {
@@ -448,12 +449,12 @@ public abstract class InMemoryProxyBase<T>
     protected TResult InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, Func<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TResult> invoker)
     {
         ThrowIfNotSingle();
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                return invoker(receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
+                return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
             }
             catch
             {
@@ -465,12 +466,12 @@ public abstract class InMemoryProxyBase<T>
     protected TResult InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, Func<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, TResult> invoker)
     {
         ThrowIfNotSingle();
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                return invoker(receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13);
+                return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13);
             }
             catch
             {
@@ -482,12 +483,12 @@ public abstract class InMemoryProxyBase<T>
     protected TResult InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, Func<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TResult> invoker)
     {
         ThrowIfNotSingle();
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                return invoker(receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14);
+                return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14);
             }
             catch
             {
@@ -499,12 +500,12 @@ public abstract class InMemoryProxyBase<T>
     protected TResult InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15, Func<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, TResult> invoker)
     {
         ThrowIfNotSingle();
-        foreach (var (key, receiver) in _receivers)
+        foreach (var receiverRegistration in _receivers.AsSpan())
         {
-            if (!CanInvoke(key)) continue;
+            if (!CanInvoke(receiverRegistration)) continue;
             try
             {
-                return invoker(receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15);
+                return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15);
             }
             catch
             {
@@ -523,8 +524,7 @@ public abstract class InMemoryProxyBase<T>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private bool CanInvoke(Guid key)
-        => !_excludes.Contains(key) &&
-           (_targets is null || _targets.Value.Contains(key));
+    private bool CanInvoke(ReceiverRegistration<TKey, T> r)
+        => !r.HasKey || r.Key is null || (!_excludes.Contains(r.Key) && (_targets is null || _targets.Value.Contains(r.Key)));
 
 }

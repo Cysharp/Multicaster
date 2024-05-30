@@ -7,7 +7,7 @@ namespace Cysharp.Runtime.Multicast.Distributed.Redis;
 
 public class RedisGroupProvider : IMulticastGroupProvider, IDisposable
 {
-    private readonly ConcurrentDictionary<(string Name, Type Type), object> _groups = new();
+    private readonly ConcurrentDictionary<(string Name, Type KeyType, Type ReceiverType), object> _groups = new();
     private readonly IRemoteProxyFactory _proxyFactory;
     private readonly IRemoteSerializer _serializer;
     private readonly ConnectionMultiplexer? _createdConnectionMultiplexer;
@@ -35,11 +35,13 @@ public class RedisGroupProvider : IMulticastGroupProvider, IDisposable
         _prefix = options.Prefix;
     }
 
-    public IMulticastAsyncGroup<TReceiver> GetOrAddGroup<TReceiver>(string name)
-        => (IMulticastAsyncGroup<TReceiver>)_groups.GetOrAdd((name, typeof(TReceiver)), _ => new RedisGroup<TReceiver>(_prefix + name, _subscriber, _proxyFactory, _serializer));
+    public IMulticastAsyncGroup<TKey, TReceiver> GetOrAddGroup<TKey, TReceiver>(string name)
+        where TKey : IEquatable<TKey>
+        => (IMulticastAsyncGroup<TKey, TReceiver>)_groups.GetOrAdd((name, typeof(TKey), typeof(TReceiver)), _ => new RedisGroup<TKey, TReceiver>(_prefix + name, _subscriber, _proxyFactory, _serializer));
 
-    public IMulticastSyncGroup<TReceiver> GetOrAddSynchronousGroup<TReceiver>(string name)
-        => (IMulticastSyncGroup<TReceiver>)_groups.GetOrAdd((name, typeof(TReceiver)), _ => new RedisGroup<TReceiver>(_prefix + name, _subscriber, _proxyFactory, _serializer));
+    public IMulticastSyncGroup<TKey, TReceiver> GetOrAddSynchronousGroup<TKey, TReceiver>(string name)
+        where TKey : IEquatable<TKey>
+        => (IMulticastSyncGroup<TKey, TReceiver>)_groups.GetOrAdd((name, typeof(TKey), typeof(TReceiver)), _ => new RedisGroup<TKey, TReceiver>(_prefix + name, _subscriber, _proxyFactory, _serializer));
 
     public void Dispose()
     {

@@ -2,6 +2,8 @@
 
 public interface IMulticastGroupProvider
 {
-    IMulticastAsyncGroup<TReceiver> GetOrAddGroup<TReceiver>(string name);
-    IMulticastSyncGroup<TReceiver> GetOrAddSynchronousGroup<TReceiver>(string name);
+    IMulticastAsyncGroup<TKey, TReceiver> GetOrAddGroup<TKey, TReceiver>(string name)
+        where TKey : IEquatable<TKey>;
+    IMulticastSyncGroup<TKey, TReceiver> GetOrAddSynchronousGroup<TKey, TReceiver>(string name)
+        where TKey : IEquatable<TKey>;
 }

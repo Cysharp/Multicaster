@@ -430,13 +430,14 @@ public abstract class RemoteProxyBase : IRemoteProxy
         }
     }
 
-    internal class RemoteMultiWriter : IRemoteReceiverWriter
+    internal class RemoteMultiWriter<TKey> : IRemoteReceiverWriter
+        where TKey : IEquatable<TKey>
     {
-        private readonly ConcurrentDictionary<Guid, IRemoteReceiverWriter> _remoteReceivers;
-        private readonly ImmutableArray<Guid> _excludes;
-        private readonly ImmutableArray<Guid>? _targets;
+        private readonly ConcurrentDictionary<TKey, IRemoteReceiverWriter> _remoteReceivers;
+        private readonly ImmutableArray<TKey> _excludes;
+        private readonly ImmutableArray<TKey>? _targets;
 
-        public RemoteMultiWriter(ConcurrentDictionary<Guid, IRemoteReceiverWriter> remoteReceivers, ImmutableArray<Guid> excludes, ImmutableArray<Guid>? targets)
+        public RemoteMultiWriter(ConcurrentDictionary<TKey, IRemoteReceiverWriter> remoteReceivers, ImmutableArray<TKey> excludes, ImmutableArray<TKey>? targets)
         {
             _remoteReceivers = remoteReceivers;
             _excludes = excludes;
@@ -461,12 +462,13 @@ public abstract class RemoteProxyBase : IRemoteProxy
         }
     }
 
-    internal class RemoteSingleWriter : IRemoteReceiverWriter, IRemoteSingleWriter
+    internal class RemoteSingleWriter<TKey> : IRemoteReceiverWriter, IRemoteSingleWriter
+        where TKey : IEquatable<TKey>
     {
-        private readonly ConcurrentDictionary<Guid, IRemoteReceiverWriter> _remoteReceivers;
-        private readonly Guid _target;
+        private readonly ConcurrentDictionary<TKey, IRemoteReceiverWriter> _remoteReceivers;
+        private readonly TKey _target;
 
-        public RemoteSingleWriter(ConcurrentDictionary<Guid, IRemoteReceiverWriter> remoteReceivers, Guid target)
+        public RemoteSingleWriter(ConcurrentDictionary<TKey, IRemoteReceiverWriter> remoteReceivers, TKey target)
         {
             _remoteReceivers = remoteReceivers;
             _target = target;

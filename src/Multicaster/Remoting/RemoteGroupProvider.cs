@@ -6,7 +6,7 @@ namespace Cysharp.Runtime.Multicast.Remoting;
 
 public class RemoteGroupProvider : IMulticastGroupProvider
 {
-    private readonly ConcurrentDictionary<(Type Type, string name), object> _groups = new();
+    private readonly ConcurrentDictionary<(Type KeyType, Type ReceiverType, string name), object> _groups = new();
     private readonly IInMemoryProxyFactory _proxyFactory;
     private readonly IRemoteProxyFactory _remoteProxyFactory;
     private readonly IRemoteSerializer _remoteSerializer;
@@ -20,22 +20,26 @@ public class RemoteGroupProvider : IMulticastGroupProvider
         _pendingTasks = pendingTasks;
     }
 
-    public IMulticastAsyncGroup<T> GetOrAddGroup<T>(string name)
-        => (IMulticastAsyncGroup<T>)_groups.GetOrAdd((typeof(T), name), _ => new RemoteCompositeGroup<T>(name, _proxyFactory, _remoteProxyFactory, _remoteSerializer, _pendingTasks, Remove));
+    public IMulticastAsyncGroup<TKey, T> GetOrAddGroup<TKey, T>(string name)
+        where TKey : IEquatable<TKey>
+        => (IMulticastAsyncGroup<TKey, T>)_groups.GetOrAdd((typeof(TKey), typeof(T), name), _ => new RemoteCompositeGroup<TKey, T>(name, _proxyFactory, _remoteProxyFactory, _remoteSerializer, _pendingTasks, Remove));
 
-    public IMulticastSyncGroup<T> GetOrAddSynchronousGroup<T>(string name)
-        => (IMulticastSyncGroup<T>)_groups.GetOrAdd((typeof(T), name), _ => new RemoteCompositeGroup<T>(name, _proxyFactory, _remoteProxyFactory, _remoteSerializer, _pendingTasks, Remove));
+    public IMulticastSyncGroup<TKey, T> GetOrAddSynchronousGroup<TKey, T>(string name)
+        where TKey : IEquatable<TKey>
+        => (IMulticastSyncGroup<TKey, T>)_groups.GetOrAdd((typeof(TKey), typeof(T), name), _ => new RemoteCompositeGroup<TKey, T>(name, _proxyFactory, _remoteProxyFactory, _remoteSerializer, _pendingTasks, Remove));
 
-    private void Remove<T>(RemoteCompositeGroup<T> group)
-        => _groups.Remove((typeof(T), group.Name), out _);
+    private void Remove<TKey, T>(RemoteCompositeGroup<TKey, T> group)
+        where TKey : IEquatable<TKey>
+        => _groups.Remove((typeof(TKey), typeof(T), group.Name), out _);
 }
 
-internal class RemoteCompositeGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>, IDisposable
+internal class RemoteCompositeGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyncGroup<TKey, T>, IDisposable
+    where TKey : IEquatable<TKey>
 {
-    private readonly Action<RemoteCompositeGroup<T>> _disposeAction;
+    private readonly Action<RemoteCompositeGroup<TKey, T>> _disposeAction;
     private readonly IInMemoryProxyFactory _memoryProxyFactory;
-    private readonly (Guid Id, InMemoryGroup<T> Group) _memoryGroup;
-    private readonly (Guid Id, RemoteGroup<T> Group) _remoteGroup;
+    private readonly InMemoryGroup<TKey, T> _memoryGroup;
+    private readonly RemoteGroup<TKey, T> _remoteGroup;
     private bool _disposed;
 
     internal string Name { get; }
@@ -48,43 +52,43 @@ internal class RemoteCompositeGroup<T> : IMulticastAsyncGroup<T>, IMulticastSync
         IRemoteProxyFactory remoteProxyFactory,
         IRemoteSerializer remoteSerializer,
         IRemoteClientResultPendingTaskRegistry pendingTasks,
-        Action<RemoteCompositeGroup<T>> disposeAction
+        Action<RemoteCompositeGroup<TKey, T>> disposeAction
     )
     {
         Name = name;
         _memoryProxyFactory = memoryProxyFactory;
         _disposeAction = disposeAction;
 
-        _memoryGroup = (Guid.NewGuid(), new InMemoryGroup<T>(name, memoryProxyFactory, static _ => { }));
-        _remoteGroup = (Guid.NewGuid(), new RemoteGroup<T>(name, remoteProxyFactory, remoteSerializer, pendingTasks, static _ => { }));
-        All = memoryProxyFactory.Create<T>([KeyValuePair.Create(_memoryGroup.Id, _memoryGroup.Group.All), KeyValuePair.Create(_remoteGroup.Id, _remoteGroup.Group.All)]);
+        _memoryGroup = new InMemoryGroup<TKey, T>(name, memoryProxyFactory, static _ => { });
+        _remoteGroup = new RemoteGroup<TKey, T>(name, remoteProxyFactory, remoteSerializer, pendingTasks, static _ => { });
+        All = memoryProxyFactory.Create<TKey, T>(ReceiverHolder.CreateImmutable<TKey, T>([_memoryGroup.All, _remoteGroup.All]));
     }
 
-    public T Except(ImmutableArray<Guid> excludes)
+    public T Except(ImmutableArray<TKey> excludes)
     {
         ThrowIfDisposed();
-        return _memoryProxyFactory.Create([KeyValuePair.Create(_memoryGroup.Id, _memoryGroup.Group.Except(excludes)), KeyValuePair.Create(_remoteGroup.Id, _remoteGroup.Group.Except(excludes))]);
+        return _memoryProxyFactory.Create(ReceiverHolder.CreateImmutable<TKey, T>([_memoryGroup.Except(excludes), _remoteGroup.Except(excludes)]));
     }
 
-    public T Only(ImmutableArray<Guid> targets)
+    public T Only(ImmutableArray<TKey> targets)
     {
         ThrowIfDisposed();
-        return _memoryProxyFactory.Create([KeyValuePair.Create(_memoryGroup.Id, _memoryGroup.Group.Only(targets)), KeyValuePair.Create(_remoteGroup.Id, _remoteGroup.Group.Only(targets))]);
+        return _memoryProxyFactory.Create(ReceiverHolder.CreateImmutable<TKey, T>([_memoryGroup.Only(targets), _remoteGroup.Only(targets)]));
     }
 
-    public T Single(Guid target)
+    public T Single(TKey target)
     {
         ThrowIfDisposed();
-        return _memoryProxyFactory.Create([KeyValuePair.Create(_memoryGroup.Id, _memoryGroup.Group.Single(target)), KeyValuePair.Create(_remoteGroup.Id, _remoteGroup.Group.Single(target))], ImmutableArray<Guid>.Empty, null);
+        return _memoryProxyFactory.Create(ReceiverHolder.CreateImmutable<TKey, T>([_memoryGroup.Single(target), _remoteGroup.Single(target)]), ImmutableArray<TKey>.Empty, null);
     }
 
-    public ValueTask AddAsync(Guid key, T receiver, CancellationToken cancellationToken = default)
+    public ValueTask AddAsync(TKey key, T receiver, CancellationToken cancellationToken = default)
     {
         Add(key, receiver);
         return default;
     }
 
-    public ValueTask RemoveAsync(Guid key, CancellationToken cancellationToken = default)
+    public ValueTask RemoveAsync(TKey key, CancellationToken cancellationToken = default)
     {
         Remove(key);
         return default;
@@ -95,31 +99,31 @@ internal class RemoteCompositeGroup<T> : IMulticastAsyncGroup<T>, IMulticastSync
         return ValueTask.FromResult(Count());
     }
 
-    public void Add(Guid key, T receiver)
+    public void Add(TKey key, T receiver)
     {
         ThrowIfDisposed();
         if (receiver is IRemoteProxy)
         {
-            _remoteGroup.Group.Add(key, receiver);
+            _remoteGroup.Add(key, receiver);
         }
         else
         {
-            _memoryGroup.Group.Add(key, receiver);
+            _memoryGroup.Add(key, receiver);
         }
     }
 
-    public void Remove(Guid key)
+    public void Remove(TKey key)
     {
         ThrowIfDisposed();
-        _memoryGroup.Group.Remove(key);
-        _remoteGroup.Group.Remove(key);
+        _memoryGroup.Remove(key);
+        _remoteGroup.Remove(key);
     }
 
     public int Count()
     {
         ThrowIfDisposed();
-        var countInMemory = _memoryGroup.Group.Count();
-        var countRemote = _remoteGroup.Group.Count();
+        var countInMemory = _memoryGroup.Count();
+        var countRemote = _remoteGroup.Count();
         return countInMemory + countRemote;
     }
 
@@ -128,13 +132,13 @@ internal class RemoteCompositeGroup<T> : IMulticastAsyncGroup<T>, IMulticastSync
         if (_disposed) return;
         _disposed = true;
 
-        _memoryGroup.Group.Dispose();
-        //_remoteGroup.Group.Dispose();
+        _memoryGroup.Dispose();
+        _remoteGroup.Dispose();
         _disposeAction(this);
     }
 
     private void ThrowIfDisposed()
     {
-        if (_disposed) throw new ObjectDisposedException(nameof(RemoteCompositeGroup<T>));
+        if (_disposed) throw new ObjectDisposedException(nameof(RemoteCompositeGroup<TKey, T>));
     }
 }

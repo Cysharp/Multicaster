@@ -35,9 +35,9 @@ public class RedisGroupTest
         var receiverD = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
 
         IMulticastGroupProvider groupProvider = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
-        using var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        using var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         IMulticastGroupProvider groupProvider2 = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
-        using var group2 = groupProvider2.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        using var group2 = groupProvider2.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
 
         // Act
         group.Add(receiverA.Id, receiverA.Proxy);
@@ -70,9 +70,9 @@ public class RedisGroupTest
         var receiverD = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
 
         IMulticastGroupProvider groupProvider = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         IMulticastGroupProvider groupProvider2 = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
-        using var group2 = groupProvider2.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        using var group2 = groupProvider2.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
 
         // Act
         group.Add(receiverA.Id, receiverA.Proxy);
@@ -109,9 +109,9 @@ public class RedisGroupTest
         var receiverD = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
 
         IMulticastGroupProvider groupProvider = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         IMulticastGroupProvider groupProvider2 = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
-        using var group2 = groupProvider2.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        using var group2 = groupProvider2.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
 
         // Act
         group.Add(receiverA.Id, receiverA.Proxy);
@@ -151,9 +151,9 @@ public class RedisGroupTest
         var receiverD = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
 
         IMulticastGroupProvider groupProvider = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
-        using var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        using var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         IMulticastGroupProvider groupProvider2 = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
-        using var group2 = groupProvider2.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        using var group2 = groupProvider2.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         group.Add(receiverA.Id, receiverA.Proxy);
         group.Add(receiverB.Id, receiverB.Proxy);
         group2.Add(receiverC.Id, receiverC.Proxy);
@@ -185,9 +185,9 @@ public class RedisGroupTest
         var receiverD = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
 
         IMulticastGroupProvider groupProvider = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
-        using var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        using var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         IMulticastGroupProvider groupProvider2 = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
-        using var group2 = groupProvider2.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        using var group2 = groupProvider2.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         group.Add(receiverA.Id, receiverA.Proxy);
         group.Add(receiverB.Id, receiverB.Proxy);
         group2.Add(receiverC.Id, receiverC.Proxy);
@@ -219,11 +219,11 @@ public class RedisGroupTest
         var receiverD = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
 
         IMulticastGroupProvider groupProvider = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
-        using var groupA1 = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroupA");
-        using var groupB1 = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroupB");
+        using var groupA1 = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroupA");
+        using var groupB1 = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroupB");
         IMulticastGroupProvider groupProvider2 = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
-        using var groupA2 = groupProvider2.GetOrAddSynchronousGroup<ITestReceiver>("MyGroupA");
-        using var groupB2 = groupProvider2.GetOrAddSynchronousGroup<ITestReceiver>("MyGroupB");
+        using var groupA2 = groupProvider2.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroupA");
+        using var groupB2 = groupProvider2.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroupB");
         groupA1.Add(receiverA.Id, receiverA.Proxy);
         groupA2.Add(receiverB.Id, receiverB.Proxy);
         groupB1.Add(receiverC.Id, receiverC.Proxy);
@@ -270,9 +270,9 @@ public class RedisGroupTest
         var receiverD = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
 
         IMulticastGroupProvider groupProvider = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
-        using var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        using var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         IMulticastGroupProvider groupProvider2 = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
-        using var group2 = groupProvider2.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        using var group2 = groupProvider2.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
 
         group.Add(receiverA.Id, receiverA.Proxy);
         group.Add(receiverB.Id, receiverB.Proxy);
@@ -306,9 +306,9 @@ public class RedisGroupTest
         var receiverD = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
 
         IMulticastGroupProvider groupProvider = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
-        using var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        using var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         IMulticastGroupProvider groupProvider2 = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
-        using var group2 = groupProvider2.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        using var group2 = groupProvider2.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
 
         group.Add(receiverA.Id, receiverA.Proxy);
         group.Add(receiverB.Id, receiverB.Proxy);
@@ -341,9 +341,9 @@ public class RedisGroupTest
         var receiverD = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
 
         IMulticastGroupProvider groupProvider = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
-        using var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        using var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         IMulticastGroupProvider groupProvider2 = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
-        using var group2 = groupProvider2.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        using var group2 = groupProvider2.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
 
         group.Add(receiverA.Id, receiverA.Proxy);
         group.Add(receiverB.Id, receiverB.Proxy);
@@ -376,9 +376,9 @@ public class RedisGroupTest
         var receiverD = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
 
         IMulticastGroupProvider groupProvider = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
-        using var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        using var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         IMulticastGroupProvider groupProvider2 = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
-        using var group2 = groupProvider2.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        using var group2 = groupProvider2.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
 
         group.Add(receiverA.Id, receiverA.Proxy);
         group.Add(receiverB.Id, receiverB.Proxy);
@@ -411,9 +411,9 @@ public class RedisGroupTest
         var receiverD = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
 
         IMulticastGroupProvider groupProvider = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
-        using var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        using var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         IMulticastGroupProvider groupProvider2 = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
-        using var group2 = groupProvider2.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        using var group2 = groupProvider2.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
 
         group.Add(receiverA.Id, receiverA.Proxy);
         group.Add(receiverB.Id, receiverB.Proxy);

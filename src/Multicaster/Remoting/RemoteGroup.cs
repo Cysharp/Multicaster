@@ -1,22 +1,25 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Immutable;
 
+using static System.Net.Mime.MediaTypeNames;
+
 namespace Cysharp.Runtime.Multicast.Remoting;
 
-internal class RemoteGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>, IDisposable
+internal class RemoteGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyncGroup<TKey, T>, IDisposable
+    where TKey : IEquatable<TKey>
 {
-    private readonly ConcurrentDictionary<Guid, IRemoteReceiverWriter> _receivers = new();
+    private readonly ConcurrentDictionary<TKey, IRemoteReceiverWriter> _receivers = new();
     private readonly IRemoteProxyFactory _proxyFactory;
     private readonly IRemoteSerializer _serializer;
     private readonly IRemoteClientResultPendingTaskRegistry _pendingTasks;
-    private readonly Action<RemoteGroup<T>> _disposeAction;
+    private readonly Action<RemoteGroup<TKey, T>> _disposeAction;
     private bool _disposed;
 
     public T All { get; }
 
     internal string Name { get; }
 
-    public RemoteGroup(string name, IRemoteProxyFactory proxyFactory, IRemoteSerializer serializer, IRemoteClientResultPendingTaskRegistry pendingTasks, Action<RemoteGroup<T>> disposeAction)
+    public RemoteGroup(string name, IRemoteProxyFactory proxyFactory, IRemoteSerializer serializer, IRemoteClientResultPendingTaskRegistry pendingTasks, Action<RemoteGroup<TKey, T>> disposeAction)
     {
         Name = name;
         _proxyFactory = proxyFactory;
@@ -24,16 +27,16 @@ internal class RemoteGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>,
         _pendingTasks = pendingTasks;
         _disposeAction = disposeAction;
 
-        All = _proxyFactory.Create<T>(_receivers, _serializer, _pendingTasks);
+        All = _proxyFactory.Create<TKey, T>(_receivers, _serializer, _pendingTasks);
     }
 
-    public ValueTask AddAsync(Guid key, T receiver, CancellationToken cancellationToken = default)
+    public ValueTask AddAsync(TKey key, T receiver, CancellationToken cancellationToken = default)
     {
         Add(key, receiver);
         return default;
     }
 
-    public ValueTask RemoveAsync(Guid key, CancellationToken cancellationToken = default)
+    public ValueTask RemoveAsync(TKey key, CancellationToken cancellationToken = default)
     {
         Remove(key);
         return default;
@@ -42,7 +45,7 @@ internal class RemoteGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>,
     public ValueTask<int> CountAsync(CancellationToken cancellationToken = default)
         => ValueTask.FromResult(Count());
 
-    public void Add(Guid key, T receiver)
+    public void Add(TKey key, T receiver)
     {
         ThrowIfDisposed();
         if (receiver is not IRemoteProxy directRemoteReceiverAccessor)
@@ -57,7 +60,7 @@ internal class RemoteGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>,
         _receivers[key] = singleReceiver;
     }
 
-    public void Remove(Guid key)
+    public void Remove(TKey key)
     {
         ThrowIfDisposed();
         _receivers.Remove(key, out _);
@@ -69,22 +72,22 @@ internal class RemoteGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>,
         return _receivers.Count;
     }
 
-    public T Except(ImmutableArray<Guid> excludes)
+    public T Except(ImmutableArray<TKey> excludes)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Except<T>(_receivers, excludes, _serializer, _pendingTasks);
+        return _proxyFactory.Except<TKey, T>(_receivers, excludes, _serializer, _pendingTasks);
     }
 
-    public T Only(ImmutableArray<Guid> targets)
+    public T Only(ImmutableArray<TKey> targets)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Only<T>(_receivers, targets, _serializer, _pendingTasks);
+        return _proxyFactory.Only<TKey, T>(_receivers, targets, _serializer, _pendingTasks);
     }
 
-    public T Single(Guid target)
+    public T Single(TKey target)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Single<T>(_receivers, target, _serializer, _pendingTasks);
+        return _proxyFactory.Single<TKey, T>(_receivers, target, _serializer, _pendingTasks);
     }
 
     public void Dispose()
@@ -96,6 +99,6 @@ internal class RemoteGroup<T> : IMulticastAsyncGroup<T>, IMulticastSyncGroup<T>,
 
     private void ThrowIfDisposed()
     {
-        if (_disposed) throw new ObjectDisposedException(nameof(RemoteGroup<T>));
+        if (_disposed) throw new ObjectDisposedException(nameof(RemoteGroup<TKey, T>));
     }
 }

@@ -19,7 +19,7 @@ public class InMemoryGroupClientResultTest
         var receiverIdD = Guid.NewGuid();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         group.Add(receiverIdA, receiverA);
         group.Add(receiverIdB, receiverB);
         group.Add(receiverIdC, receiverC);
@@ -49,7 +49,7 @@ public class InMemoryGroupClientResultTest
         var receiverIdD = Guid.NewGuid();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         group.Add(receiverIdA, receiverA);
         group.Add(receiverIdB, receiverB);
         group.Add(receiverIdC, receiverC);
@@ -79,7 +79,7 @@ public class InMemoryGroupClientResultTest
         var receiverIdD = Guid.NewGuid();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         group.Add(receiverIdA, receiverA);
         group.Add(receiverIdB, receiverB);
         group.Add(receiverIdC, receiverC);
@@ -109,7 +109,7 @@ public class InMemoryGroupClientResultTest
         var receiverIdD = Guid.NewGuid();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         group.Add(receiverIdA, receiverA);
         group.Add(receiverIdB, receiverB);
         group.Add(receiverIdC, receiverC);
@@ -140,7 +140,7 @@ public class InMemoryGroupClientResultTest
         var receiverIdD = Guid.NewGuid();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         group.Add(receiverIdA, receiverA);
         group.Add(receiverIdB, receiverB);
         group.Add(receiverIdC, receiverC);
@@ -171,7 +171,7 @@ public class InMemoryGroupClientResultTest
         var receiverIdD = Guid.NewGuid();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         group.Add(receiverIdA, receiverA);
         group.Add(receiverIdB, receiverB);
         group.Add(receiverIdC, receiverC);
@@ -202,7 +202,7 @@ public class InMemoryGroupClientResultTest
         var receiverIdD = Guid.NewGuid();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         group.Add(receiverIdA, receiverA);
         group.Add(receiverIdB, receiverB);
         group.Add(receiverIdC, receiverC);
@@ -234,7 +234,7 @@ public class InMemoryGroupClientResultTest
         var receiverIdD = Guid.NewGuid();
 
         IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
-        var group = groupProvider.GetOrAddSynchronousGroup<ITestReceiver>("MyGroup");
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         group.Add(receiverIdA, receiverA);
         group.Add(receiverIdB, receiverB);
         group.Add(receiverIdC, receiverC);
