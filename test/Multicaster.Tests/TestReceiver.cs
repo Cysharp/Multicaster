@@ -17,7 +17,7 @@ public interface ITestReceiver
     Task<string> ClientResult_Parameter_One(int arg1);
     Task<string> ClientResult_Parameter_Many(int arg1, string arg2, bool arg3, long arg4);
 
-    Task<string> ClientResult_Cancellation(int delayMilliseconds, [ClientResultCancellation]CancellationToken cancellationToken);
+    Task<string> ClientResult_Cancellation(int delayMilliseconds, CancellationToken cancellationToken);
     Task<string> ClientResult_Throw();
 }
 

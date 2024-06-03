@@ -184,7 +184,7 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
 
             var clientResultCancellationParams = parameters
                 .Select((x, i) => (ParameterInfo: x, Index: i))
-                .Where(x => x.ParameterInfo.ParameterType == typeof(CancellationToken) && x.ParameterInfo.GetCustomAttribute<ClientResultCancellationAttribute>() is not null)
+                .Where(x => x.ParameterInfo.ParameterType == typeof(CancellationToken))
                 .ToArray();
 
             var cancellationTokenIndex = default(int?);
@@ -198,7 +198,7 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
 
                 cancellationTokenIndex = clientResultCancellationParams.Select(x => x.Index).First();
                 parameters = parameters
-                    .Where(x => x.ParameterType != typeof(CancellationToken) && x.GetCustomAttribute<ClientResultCancellationAttribute>() is null)
+                    .Where(x => x.ParameterType != typeof(CancellationToken))
                     .ToArray();
             }
 
