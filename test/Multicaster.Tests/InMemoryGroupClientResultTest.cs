@@ -1,4 +1,6 @@
-﻿using Cysharp.Runtime.Multicast;
+﻿using System.Diagnostics;
+
+using Cysharp.Runtime.Multicast;
 using Cysharp.Runtime.Multicast.InMemory;
 
 namespace Multicaster.Tests;
@@ -247,6 +249,77 @@ public class InMemoryGroupClientResultTest
         Assert.NotNull(ex);
         Assert.IsType<InvalidOperationException>(ex);
         Assert.Empty(receiverA.Received);
+        Assert.Empty(receiverB.Received);
+        Assert.Empty(receiverC.Received);
+        Assert.Empty(receiverD.Received);
+    }
+
+    [Fact]
+    public async Task Throw()
+    {
+        // Arrange
+        var receiverA = new TestInMemoryReceiver();
+        var receiverIdA = Guid.NewGuid();
+        var receiverB = new TestInMemoryReceiver();
+        var receiverIdB = Guid.NewGuid();
+        var receiverC = new TestInMemoryReceiver();
+        var receiverIdC = Guid.NewGuid();
+        var receiverD = new TestInMemoryReceiver();
+        var receiverIdD = Guid.NewGuid();
+
+        IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
+        group.Add(receiverIdA, receiverA);
+        group.Add(receiverIdB, receiverB);
+        group.Add(receiverIdC, receiverC);
+        group.Add(receiverIdD, receiverD);
+
+        // Act
+        var ex = await Record.ExceptionAsync(async () => await group.Single(receiverIdA).ClientResult_Throw());
+
+        // Assert
+        Assert.NotNull(ex);
+        Assert.IsType<InvalidOperationException>(ex);
+        Assert.Equal("Something went wrong.", ex.Message);
+        Assert.Equal([(nameof(ITestReceiver.ClientResult_Throw),(TestInMemoryReceiver.ParameterZeroArgument))], receiverA.Received);
+        Assert.Empty(receiverB.Received);
+        Assert.Empty(receiverC.Received);
+        Assert.Empty(receiverD.Received);
+    }
+
+    [Fact]
+    public async Task Cancellation()
+    {
+        // Arrange
+        var receiverA = new TestInMemoryReceiver();
+        var receiverIdA = Guid.NewGuid();
+        var receiverB = new TestInMemoryReceiver();
+        var receiverIdB = Guid.NewGuid();
+        var receiverC = new TestInMemoryReceiver();
+        var receiverIdC = Guid.NewGuid();
+        var receiverD = new TestInMemoryReceiver();
+        var receiverIdD = Guid.NewGuid();
+
+        IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
+        group.Add(receiverIdA, receiverA);
+        group.Add(receiverIdB, receiverB);
+        group.Add(receiverIdC, receiverC);
+        group.Add(receiverIdD, receiverD);
+
+        var cts = new CancellationTokenSource();
+
+        // Act
+        cts.CancelAfter(100);
+        var startingTimestamp = Stopwatch.GetTimestamp();
+        var ex = await Record.ExceptionAsync(async () => await group.Single(receiverIdA).ClientResult_Cancellation(1000, cts.Token));
+        var elapsed = Stopwatch.GetElapsedTime(startingTimestamp);
+
+        // Assert
+        Assert.NotNull(ex);
+        Assert.True(elapsed.TotalMilliseconds < 500);
+        Assert.IsAssignableFrom<OperationCanceledException>(ex);
+        Assert.Equal([(nameof(ITestReceiver.ClientResult_Cancellation), (1000, cts.Token))], receiverA.Received);
         Assert.Empty(receiverB.Received);
         Assert.Empty(receiverC.Received);
         Assert.Empty(receiverD.Received);

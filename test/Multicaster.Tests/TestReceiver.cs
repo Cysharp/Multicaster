@@ -1,3 +1,5 @@
+using Cysharp.Runtime.Multicast;
+
 namespace Multicaster.Tests;
 
 public interface ITestReceiver
@@ -14,6 +16,9 @@ public interface ITestReceiver
     Task<string> ClientResult_Parameter_Zero();
     Task<string> ClientResult_Parameter_One(int arg1);
     Task<string> ClientResult_Parameter_Many(int arg1, string arg2, bool arg3, long arg4);
+
+    Task<string> ClientResult_Cancellation(int delayMilliseconds, [ClientResultCancellation]CancellationToken cancellationToken);
+    Task<string> ClientResult_Throw();
 }
 
 public class TestInMemoryReceiver : ITestReceiver
@@ -77,5 +82,19 @@ public class TestInMemoryReceiver : ITestReceiver
         Received.Add((nameof(ClientResult_Parameter_Many), (arg1, arg2, arg3, arg4)));
         await Task.Delay(500);
         return $"{nameof(ClientResult_Parameter_Many)}:{arg1},{arg2},{arg3},{arg4}";
+    }
+
+    public async Task<string> ClientResult_Cancellation(int delayMilliseconds, CancellationToken cancellationToken)
+    {
+        Received.Add((nameof(ClientResult_Cancellation), (delayMilliseconds, cancellationToken)));
+        await Task.Delay(delayMilliseconds, cancellationToken);
+        return $"{nameof(ClientResult_Cancellation)}: {delayMilliseconds}";
+    }
+
+    public async Task<string> ClientResult_Throw()
+    {
+        Received.Add((nameof(ClientResult_Throw), ParameterZeroArgument));
+        await Task.Delay(500);
+        throw new InvalidOperationException("Something went wrong.");
     }
 }

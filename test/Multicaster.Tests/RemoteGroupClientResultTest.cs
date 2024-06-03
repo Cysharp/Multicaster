@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Text.Json.Nodes;
 
 using Cysharp.Runtime.Multicast.Remoting;
 
@@ -37,7 +38,7 @@ public class RemoteGroupClientResultTest
     }
 
     [Fact]
-    public async Task Exception()
+    public async Task Throw()
     {
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
@@ -48,7 +49,7 @@ public class RemoteGroupClientResultTest
         var proxy = proxyFactory.CreateDirect<ITestReceiver>(receiverWriterA, serializer, pendingTasks);
 
         // Act & Assert
-        var task = proxy.ClientResult_Parameter_Zero();
+        var task = proxy.ClientResult_Throw();
         Assert.False(task.IsCompleted);
         Assert.NotEmpty(receiverWriterA.Written);
         Assert.Equal(1, pendingTasks.Count);
@@ -89,6 +90,41 @@ public class RemoteGroupClientResultTest
         // The task should be canceled by timeout and removed from pending tasks.
         Assert.True(task.IsCompleted);
         await Assert.ThrowsAsync<TaskCanceledException>(async () => await task);
+        Assert.Equal(0, pendingTasks.Count);
+    }
+
+    [Fact]
+    public async Task Cancellation()
+    {
+        // Arrange
+        var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var serializer = new TestJsonRemoteSerializer();
+        var pendingTasks = new RemoteClientResultPendingTaskRegistry();
+
+        var receiverWriterA = new TestRemoteReceiverWriter();
+        var proxy = proxyFactory.CreateDirect<ITestReceiver>(receiverWriterA, serializer, pendingTasks);
+        var cts = new CancellationTokenSource();
+
+        // Act & Assert
+        cts.CancelAfter(250);
+        var task = proxy.ClientResult_Cancellation(5000, cts.Token);
+        Assert.False(task.IsCompleted);
+        Assert.NotEmpty(receiverWriterA.Written);
+        Assert.Equal(1, pendingTasks.Count);
+
+        // Wait for timeout...
+        await Task.Delay(TimeSpan.FromMilliseconds(500));
+
+        // The task should be canceled by timeout and removed from pending tasks.
+        Assert.True(task.IsCompleted);
+        await Assert.ThrowsAsync<TaskCanceledException>(async () => await task);
+
+        Assert.NotEmpty(receiverWriterA.Written);
+        var invocationMessage = JsonSerializer.Deserialize<TestJsonRemoteSerializer.SerializedInvocation>(receiverWriterA.Written[0])!;
+        Assert.Equal(nameof(ITestReceiver.ClientResult_Cancellation), invocationMessage.MethodName);
+        Assert.Equal(1, invocationMessage.Arguments.Count);
+        Assert.Equal(5000, ((JsonElement)invocationMessage.Arguments[0]!).GetInt32());
+
         Assert.Equal(0, pendingTasks.Count);
     }
 }

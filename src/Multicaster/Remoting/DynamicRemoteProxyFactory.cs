@@ -52,12 +52,12 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
                     method.GetParameters().Select(x => x.ParameterType).ToArray()
                 );
 
-                var methodInvoke = method.ReturnType == typeof(void)
-                    ? MethodInvokeHelper.GetInvokeMethodInfo(method)
-                    : MethodInvokeHelper.GetInvokeWithResultMethodInfo(method);
-
+                if (method.ReturnType == typeof(void))
                 {
+                    // Standard Broadcast
+                    var methodInvoke = MethodInvokeHelper.GetInvokeMethodInfo(method);
                     var il = methodBuilder.GetILGenerator();
+
                     il.Emit(OpCodes.Ldarg_0); // this
                     il.Emit(OpCodes.Ldstr, method.Name); // name
                     il.Emit(OpCodes.Ldc_I4, FNV1A32.GetHashCode(method.Name)); // methodId
@@ -65,6 +65,45 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
                     {
                         il.Emit(OpCodes.Ldarg, 1 + i);
                     }
+
+                    il.Emit(OpCodes.Callvirt, methodInvoke); // base.Invoke(method.Name, methodId, arg1, arg2 ...);
+                    il.Emit(OpCodes.Ret);
+                }
+                else
+                {
+                    // Client Result
+                    var (methodInvoke, cancellationTokenIndex) =  MethodInvokeHelper.GetInvokeWithResultMethodInfo(method);
+                    var il = methodBuilder.GetILGenerator();
+
+                    if (!cancellationTokenIndex.HasValue)
+                    {
+                        il.DeclareLocal(typeof(CancellationToken));
+                    }
+
+                    il.Emit(OpCodes.Ldarg_0); // this
+                    il.Emit(OpCodes.Ldstr, method.Name); // name
+                    il.Emit(OpCodes.Ldc_I4, FNV1A32.GetHashCode(method.Name)); // methodId
+                    for (var i = 0; i < method.GetParameters().Length; i++)
+                    {
+                        if (cancellationTokenIndex.HasValue && cancellationTokenIndex.Value == i)
+                        {
+                            continue; // Skip if the parameter is CancellationToken for client result.
+                        }
+                        il.Emit(OpCodes.Ldarg, 1 + i);
+                    }
+
+                    // CancellationToken
+                    if (cancellationTokenIndex.HasValue)
+                    {
+                        il.Emit(OpCodes.Ldarg, 1 + cancellationTokenIndex.Value);
+                    }
+                    else
+                    {
+                        il.Emit(OpCodes.Ldloca_S, 0);
+                        il.Emit(OpCodes.Initobj, typeof(CancellationToken));
+                        il.Emit(OpCodes.Ldloc_0);
+                    }
+
                     il.Emit(OpCodes.Callvirt, methodInvoke); // base.Invoke(method.Name, methodId, arg1, arg2 ...);
                     il.Emit(OpCodes.Ret);
                 }
@@ -123,11 +162,10 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
             var parameters = interfaceMethod.GetParameters();
             if (parameters.Length > 15)
             {
-                throw new NotSupportedException($"A method must have less than 15 parameters. Method '{interfaceMethod.Name}' has {parameters.Length} parameters.");
+                throw new NotSupportedException($"A receiver method must have less than 15 parameters. Method '{interfaceMethod.Name}' has {parameters.Length} parameters.");
             }
 
             var methodInvoke = MethodInfoInvoke[parameters.Length];
-
             if (methodInvoke.ContainsGenericParameters)
             {
                 methodInvoke = methodInvoke.MakeGenericMethod([.. parameters.Select(x => x.ParameterType)]);
@@ -136,29 +174,49 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
             return methodInvoke;
         }
 
-        public static MethodInfo GetInvokeWithResultMethodInfo(MethodInfo interfaceMethod)
+        public static (MethodInfo MethodInfo, int? CancellationTokenInde) GetInvokeWithResultMethodInfo(MethodInfo interfaceMethod)
         {
             var parameters = interfaceMethod.GetParameters();
             if (parameters.Length > 15)
             {
-                throw new NotSupportedException($"A method must have less than 15 parameters. Method '{interfaceMethod.Name}' has {parameters.Length} parameters.");
+                throw new NotSupportedException($"A receiver method must have less than 15 parameters. Method '{interfaceMethod.Name}' has {parameters.Length} parameters.");
+            }
+
+            var clientResultCancellationParams = parameters
+                .Select((x, i) => (ParameterInfo: x, Index: i))
+                .Where(x => x.ParameterInfo.ParameterType == typeof(CancellationToken) && x.ParameterInfo.GetCustomAttribute<ClientResultCancellationAttribute>() is not null)
+                .ToArray();
+
+            var cancellationTokenIndex = default(int?);
+            if (clientResultCancellationParams.Any())
+            {
+                // The method has CancellationToken parameter for Client Result
+                if (clientResultCancellationParams.Length > 1)
+                {
+                    throw new NotSupportedException("A receiver method has multiple CancellationToken parameter for client result. Only one CancellationToken parameter is allowed for client result.");
+                }
+
+                cancellationTokenIndex = clientResultCancellationParams.Select(x => x.Index).First();
+                parameters = parameters
+                    .Where(x => x.ParameterType != typeof(CancellationToken) && x.GetCustomAttribute<ClientResultCancellationAttribute>() is null)
+                    .ToArray();
             }
 
             var isGenericTaskOrValueTask = interfaceMethod.ReturnType.IsConstructedGenericType;
             if (isGenericTaskOrValueTask)
             {
-                return MethodInfoInvokeWithResult[parameters.Length + 1].MakeGenericMethod([.. parameters.Select(x => x.ParameterType), interfaceMethod.ReturnType.GetGenericArguments()[0]]);
+                return (MethodInfoInvokeWithResult[parameters.Length + 1].MakeGenericMethod([.. parameters.Select(x => x.ParameterType), interfaceMethod.ReturnType.GetGenericArguments()[0]]), cancellationTokenIndex);
 
             }
             else
             {
                 if (parameters.Length == 0)
                 {
-                    return MethodInfoInvokeWithResultNoReturnValue[parameters.Length];
+                    return (MethodInfoInvokeWithResultNoReturnValue[parameters.Length], cancellationTokenIndex);
                 }
                 else
                 {
-                    return MethodInfoInvokeWithResultNoReturnValue[parameters.Length].MakeGenericMethod([.. parameters.Select(x => x.ParameterType)]);
+                    return (MethodInfoInvokeWithResultNoReturnValue[parameters.Length].MakeGenericMethod([.. parameters.Select(x => x.ParameterType)]), cancellationTokenIndex);
                 }
             }
         }

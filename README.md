@@ -34,7 +34,7 @@ var receiverIdC = Guid.NewGuid();
 var groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
 
 // Create a group and add receivers to the group.
-var group = groupProvider.GetOrAddSynchronousGroup<IGreeterReceiver>("MyGroup");
+var group = groupProvider.GetOrAddSynchronousGroup<Guid, IGreeterReceiver>("MyGroup");
 group.Add(receiverIdA, receiverA);
 group.Add(receiverIdB, receiverB);
 group.Add(receiverIdC, receiverC);
@@ -59,25 +59,25 @@ receiverA.OnMessage("DirectMessage", "Sent a message to the receiver directly.")
 
 ## API
 ### `IMulticastGroupProvider` interface
-- `IMulticastAsyncGroup<TReceiver> GetOrAddGroup<TReceiver>(string name);`
-- `IMulticastSyncGroup<TReceiver> GetOrAddSynchronousGroup<TReceiver>(string name);`
+- `IMulticastAsyncGroup<TKey, TReceiver> GetOrAddGroup<TKey, TReceiver>(string name);`
+- `IMulticastSyncGroup<TKey, TReceiver> GetOrAddSynchronousGroup<TKey, TReceiver>(string name);`
 
-### `IMulticastGroup<T>` interface
+### `IMulticastGroup<TKey, T>` interface
 - `TReceiver All { get; }`
-- `TReceiver Except(ImmutableArray<Guid> excludes);`
-- `TReceiver Only(ImmutableArray<Guid> targets);`
-- `TReceiver Single(Guid target);`
+- `TReceiver Except(ImmutableArray<TKey> excludes);`
+- `TReceiver Only(ImmutableArray<TKey> targets);`
+- `TReceiver Single(TKey target);`
 - `void Dispose()`
     - Dispose and unregister the group from a group provider.
 
-### `IMulticastAsyncGroup<T>` interface (implements `IMulticastGroup<T>`)
-- `ValueTask AddAsync(Guid key, TReceiver receiver, CancellationToken cancellationToken = default);`
-- `ValueTask RemoveAsync(Guid key, CancellationToken cancellationToken = default);`
+### `IMulticastAsyncGroup<TKey, T>` interface (implements `IMulticastGroup<TKey, T>`)
+- `ValueTask AddAsync(TKey key, TReceiver receiver, CancellationToken cancellationToken = default);`
+- `ValueTask RemoveAsync(TKey key, CancellationToken cancellationToken = default);`
 - `ValueTask<int> CountAsync(CancellationToken cancellationToken = default);`
 
-### `IMulticastSyncGroup<T>` interface (implements `IMulticastGroup<T>`)
-- `void Add(Guid key, TReceiver receiver);`
-- `void Remove(Guid key);`
+### `IMulticastSyncGroup<TKey, T>` interface (implements `IMulticastGroup<TKey, T>`)
+- `void Add(TKey key, TReceiver receiver);`
+- `void Remove(TKey key);`
 - `int Count();`
 
 ## Transports and supported features

@@ -1,0 +1,59 @@
+﻿<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ output extension=".cs" #>
+
+using Cysharp.Runtime.Multicast.Internal;
+
+namespace Cysharp.Runtime.Multicast.Remoting;
+
+public partial class RemoteProxyBase
+{
+<# for (var i = 1; i < 16; i++) {
+    var tArgs = string.Join(", ", Enumerable.Range(1, i).Select(x => $"T{x}"));
+    var methodParams = string.Join(", ", Enumerable.Range(1, i).Select(x => $"T{x} arg{x}"));
+    var methodArgs = string.Join(", ", Enumerable.Range(1, i).Select(x => $"arg{x}"));
+#>
+    protected void Invoke<<#= tArgs #>>(string name, int methodId, <#= methodParams #>)
+    {
+        using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
+        _serializer.SerializeInvocation(writer, <#= methodArgs #>, new SerializationContext(name, methodId, null));
+        _writer.Write(writer.WrittenMemory);
+    }
+<# } #>
+
+<# for (var i = 1; i < 16; i++) {
+    var tArgs = string.Join(", ", Enumerable.Range(1, i).Select(x => $"T{x}"));
+    var methodParams = string.Join(", ", Enumerable.Range(1, i).Select(x => $"T{x} arg{x}"));
+    var methodArgs = string.Join(", ", Enumerable.Range(1, i).Select(x => $"arg{x}"));
+#>
+    protected Task InvokeWithResultNoReturnValue<<#= tArgs #>>(string name, int methodId, <#= methodParams #>, CancellationToken cancellationToken)
+    {
+        ThrowIfNotSingleWriter();
+        using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
+        var (task, messageId) = EnqueuePendingTask(name, methodId, cancellationToken);
+        _serializer.SerializeInvocation(writer, <#= methodArgs #>, new SerializationContext(name, methodId, messageId));
+        _writer.Write(writer.WrittenMemory);
+        return task;
+    }
+<# } #>
+
+<# for (var i = 1; i < 16; i++) {
+    var tArgs = string.Join(", ", Enumerable.Range(1, i).Select(x => $"T{x}"));
+    var methodParams = string.Join(", ", Enumerable.Range(1, i).Select(x => $"T{x} arg{x}"));
+    var methodArgs = string.Join(", ", Enumerable.Range(1, i).Select(x => $"arg{x}"));
+#>
+    protected Task<TResult> InvokeWithResult<<#= tArgs #>, TResult>(string name, int methodId, <#= methodParams #>, CancellationToken cancellationToken)
+    {
+        ThrowIfNotSingleWriter();
+        using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
+        var (task, messageId) = EnqueuePendingTask<TResult>(name, methodId, cancellationToken);
+        _serializer.SerializeInvocation(writer, <#= methodArgs #>, new SerializationContext(name, methodId, messageId));
+        _writer.Write(writer.WrittenMemory);
+        return task;
+    }
+<# } #>
+}
