@@ -122,7 +122,7 @@ public class RemoteGroupClientResultTest
         Assert.NotEmpty(receiverWriterA.Written);
         var invocationMessage = JsonSerializer.Deserialize<TestJsonRemoteSerializer.SerializedInvocation>(receiverWriterA.Written[0])!;
         Assert.Equal(nameof(ITestReceiver.ClientResult_Cancellation), invocationMessage.MethodName);
-        Assert.Equal(1, invocationMessage.Arguments.Count);
+        Assert.Single(invocationMessage.Arguments);
         Assert.Equal(5000, ((JsonElement)invocationMessage.Arguments[0]!).GetInt32());
 
         Assert.Equal(0, pendingTasks.Count);

@@ -75,9 +75,10 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
                     var (methodInvoke, cancellationTokenIndex) =  MethodInvokeHelper.GetInvokeWithResultMethodInfo(method);
                     var il = methodBuilder.GetILGenerator();
 
+                    var local_ctDefault = default(LocalBuilder);
                     if (!cancellationTokenIndex.HasValue)
                     {
-                        il.DeclareLocal(typeof(CancellationToken));
+                        local_ctDefault = il.DeclareLocal(typeof(CancellationToken));
                     }
 
                     il.Emit(OpCodes.Ldarg_0); // this
@@ -99,9 +100,9 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
                     }
                     else
                     {
-                        il.Emit(OpCodes.Ldloca_S, 0);
+                        il.Emit(OpCodes.Ldloca_S, local_ctDefault!);
                         il.Emit(OpCodes.Initobj, typeof(CancellationToken));
-                        il.Emit(OpCodes.Ldloc_0);
+                        il.Emit(OpCodes.Ldloc_S, local_ctDefault!);
                     }
 
                     il.Emit(OpCodes.Callvirt, methodInvoke); // base.Invoke(method.Name, methodId, arg1, arg2 ...);
