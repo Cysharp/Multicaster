@@ -32,7 +32,11 @@ public class RemoteClientResultPendingTaskRegistry : IRemoteClientResultPendingT
 
     public void Register(PendingTask pendingTask)
     {
-        ThrowIfDisposed();
+        if (_disposed)
+        {
+            pendingTask.TrySetCanceled();
+            return;
+        }
         
         var registration = pendingTask.TimeoutCancellationToken.Register(() =>
         {
@@ -74,14 +78,6 @@ public class RemoteClientResultPendingTaskRegistry : IRemoteClientResultPendingT
         if (!_pendingTasks.IsEmpty)
         {
             goto DisposeAll;
-        }
-    }
-
-    private void ThrowIfDisposed()
-    {
-        if (_disposed)
-        {
-            throw new ObjectDisposedException(nameof(IRemoteClientResultPendingTaskRegistry));
         }
     }
 }

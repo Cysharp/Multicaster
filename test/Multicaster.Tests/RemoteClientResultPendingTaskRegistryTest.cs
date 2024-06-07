@@ -30,6 +30,23 @@ public class RemoteClientResultPendingTaskRegistryTest
     }
 
     [Fact]
+    public void CancelImmediately_On_Register_When_Disposed()
+    {
+        // Arrange
+        var reg = new RemoteClientResultPendingTaskRegistry();
+        var serializer = new TestJsonRemoteSerializer();
+        reg.Dispose();
+
+        // Act
+        var tcs1 = new TaskCompletionSource<bool>();
+        var pendingTask1 = reg.CreateTask("Foo", 0, Guid.NewGuid(), tcs1, default, serializer);
+        reg.Register(pendingTask1);
+
+        // Assert
+        Assert.True(tcs1.Task.IsCanceled);
+    }
+
+    [Fact]
     public async Task Timeout()
     {
         // Arrange
