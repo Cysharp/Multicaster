@@ -40,7 +40,7 @@ public class RemoteClientResultPendingTaskRegistry : IRemoteClientResultPendingT
         
         var registration = pendingTask.TimeoutCancellationToken.Register(() =>
         {
-            pendingTask.TrySetCanceled(pendingTask.TimeoutCancellationToken);
+            pendingTask.TrySetException(new TaskCanceledException("The operation has timed out.", new TimeoutException(), pendingTask.TimeoutCancellationToken));
             _ = TryGetAndUnregisterPendingTask(pendingTask.MessageId, out _);
         });
         _pendingTasks[pendingTask.MessageId] = (pendingTask, registration);

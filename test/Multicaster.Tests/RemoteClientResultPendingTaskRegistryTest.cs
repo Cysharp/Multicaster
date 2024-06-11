@@ -72,9 +72,13 @@ public class RemoteClientResultPendingTaskRegistryTest
         // Assert
         Assert.False(beforeSecondDelayTcs1IsCanceled);
         Assert.False(beforeSecondDelayTcs2IsCanceled);
-        Assert.True(beforeSecondDelayTcs3IsCanceled); // The timeout of the pending task is overridden.
-        Assert.True(tcs1.Task.IsCanceled);
-        Assert.True(tcs2.Task.IsCanceled);
-        Assert.True(tcs3.Task.IsCanceled);
+        Assert.False(beforeSecondDelayTcs3IsCanceled);
+        // The timeout of the pending task is overridden.
+        Assert.IsType<TaskCanceledException>(tcs3.Task.Exception!.InnerException);
+        Assert.IsType<TimeoutException>(tcs3.Task.Exception!.InnerException.InnerException);
+
+        Assert.True(tcs1.Task.IsCompleted);
+        Assert.True(tcs2.Task.IsCompleted);
+        Assert.True(tcs3.Task.IsCompleted);
     }
 }
