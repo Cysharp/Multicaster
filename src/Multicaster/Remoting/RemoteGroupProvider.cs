@@ -61,25 +61,25 @@ internal class RemoteCompositeGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IM
 
         _memoryGroup = new InMemoryGroup<TKey, T>(name, memoryProxyFactory, static _ => { });
         _remoteGroup = new RemoteGroup<TKey, T>(name, remoteProxyFactory, remoteSerializer, pendingTasks, static _ => { });
-        All = memoryProxyFactory.Create<TKey, T>(ReceiverHolder.CreateImmutable<TKey, T>([_memoryGroup.All, _remoteGroup.All]));
+        All = memoryProxyFactory.Create<TKey, T>(ReceiverHolder.CreateImmutable<TKey, T>(_memoryGroup.All, _remoteGroup.All));
     }
 
     public T Except(ImmutableArray<TKey> excludes)
     {
         ThrowIfDisposed();
-        return _memoryProxyFactory.Create(ReceiverHolder.CreateImmutable<TKey, T>([_memoryGroup.Except(excludes), _remoteGroup.Except(excludes)]));
+        return _memoryProxyFactory.Create(ReceiverHolder.CreateImmutable<TKey, T>(_memoryGroup.Except(excludes), _remoteGroup.Except(excludes)));
     }
 
     public T Only(ImmutableArray<TKey> targets)
     {
         ThrowIfDisposed();
-        return _memoryProxyFactory.Create(ReceiverHolder.CreateImmutable<TKey, T>([_memoryGroup.Only(targets), _remoteGroup.Only(targets)]));
+        return _memoryProxyFactory.Create(ReceiverHolder.CreateImmutable<TKey, T>(_memoryGroup.Only(targets), _remoteGroup.Only(targets)));
     }
 
     public T Single(TKey target)
     {
         ThrowIfDisposed();
-        return _memoryProxyFactory.Create(ReceiverHolder.CreateImmutable<TKey, T>([_memoryGroup.Single(target), _remoteGroup.Single(target)]));
+        return _memoryProxyFactory.Create(ReceiverHolder.CreateImmutable<TKey, T>(_memoryGroup.Single(target), _remoteGroup.Single(target)));
     }
 
     public ValueTask AddAsync(TKey key, T receiver, CancellationToken cancellationToken = default)

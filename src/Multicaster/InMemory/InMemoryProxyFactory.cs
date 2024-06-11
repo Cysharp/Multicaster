@@ -31,6 +31,28 @@ public interface IReceiverHolder<TKey, T>
     ReadOnlySpan<ReceiverRegistration<TKey, T>> AsSpan();
 }
 
+public static class ReceiverHolder
+{
+    public static ImmutableReceiverHolder<TKey, T> CreateImmutable<TKey, T>(IEnumerable<T> receivers)
+        where TKey : IEquatable<TKey>
+        => new(receivers);
+
+    public static ImmutableReceiverHolder<TKey, T> CreateImmutable<TKey, T>(T receiver1, T receiver2)
+        where TKey : IEquatable<TKey>
+        => new(receiver1, receiver2);
+
+    public static MutableReceiverHolder<TKey, T> CreateMutable<TKey, T>()
+        where TKey : IEquatable<TKey>
+        => new();
+
+    public static MutableReceiverHolder<TKey, T> CreateMutableWithInitialReceivers<TKey, T>(IEnumerable<(TKey, T)> receivers)
+        where TKey : IEquatable<TKey>
+        => new(receivers);
+}
+
+public readonly record struct ReceiverRegistration<TKey, T>(TKey? Key, T Receiver, bool HasKey)
+    where TKey : IEquatable<TKey>;
+
 public class ImmutableReceiverHolder<TKey, T> : IReceiverHolder<TKey, T>
     where TKey : IEquatable<TKey>
 {
@@ -44,25 +66,10 @@ public class ImmutableReceiverHolder<TKey, T> : IReceiverHolder<TKey, T>
 
     public ImmutableReceiverHolder(IEnumerable<T> receivers)
         => _receivers = receivers.Select(x => new ReceiverRegistration<TKey, T>(default, x, HasKey: false)).ToArray();
+
+    public ImmutableReceiverHolder(T receiver1, T receiver2)
+        => _receivers = [new ReceiverRegistration<TKey, T>(default, receiver1, HasKey: false), new ReceiverRegistration<TKey, T>(default, receiver2, HasKey: false)];
 }
-
-public static class ReceiverHolder
-{
-    public static ImmutableReceiverHolder<TKey, T> CreateImmutable<TKey, T>(IEnumerable<T> receivers)
-        where TKey : IEquatable<TKey>
-        => new(receivers);
-
-    public static MutableReceiverHolder<TKey, T> CreateMutable<TKey, T>()
-        where TKey : IEquatable<TKey>
-        => new();
-
-    public static MutableReceiverHolder<TKey, T> CreateMutableWithInitialReceivers<TKey, T>(IEnumerable<(TKey, T)> receivers)
-        where TKey : IEquatable<TKey>
-        => new(receivers);
-}
-
-public record ReceiverRegistration<TKey, T>(TKey? Key, T Receiver, bool HasKey)
-    where TKey : IEquatable<TKey>;
 
 public class MutableReceiverHolder<TKey, T> : IReceiverHolder<TKey, T>
     where TKey : IEquatable<TKey>
