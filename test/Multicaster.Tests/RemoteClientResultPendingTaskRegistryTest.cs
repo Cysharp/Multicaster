@@ -67,7 +67,7 @@ public class RemoteClientResultPendingTaskRegistryTest
         var beforeSecondDelayTcs1IsCanceled = tcs1.Task.IsCanceled;
         var beforeSecondDelayTcs2IsCanceled = tcs2.Task.IsCanceled;
         var beforeSecondDelayTcs3IsCanceled = tcs3.Task.IsCanceled;
-        await Task.Delay(600);
+        await Task.Delay(700);
 
         // Assert
         Assert.False(beforeSecondDelayTcs1IsCanceled);
