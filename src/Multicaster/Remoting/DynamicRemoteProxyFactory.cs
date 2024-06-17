@@ -60,7 +60,7 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
 
                     il.Emit(OpCodes.Ldarg_0); // this
                     il.Emit(OpCodes.Ldstr, method.Name); // name
-                    il.Emit(OpCodes.Ldc_I4, FNV1A32.GetHashCode(method.Name)); // methodId
+                    il.Emit(OpCodes.Ldc_I4, MethodInvokeHelper.GetMethodId(method)); // methodId
                     for (var i = 0; i < method.GetParameters().Length; i++)
                     {
                         il.Emit(OpCodes.Ldarg, 1 + i);
@@ -83,7 +83,7 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
 
                     il.Emit(OpCodes.Ldarg_0); // this
                     il.Emit(OpCodes.Ldstr, method.Name); // name
-                    il.Emit(OpCodes.Ldc_I4, FNV1A32.GetHashCode(method.Name)); // methodId
+                    il.Emit(OpCodes.Ldc_I4, MethodInvokeHelper.GetMethodId(method)); // methodId
                     for (var i = 0; i < method.GetParameters().Length; i++)
                     {
                         if (cancellationTokenIndex.HasValue && cancellationTokenIndex.Value == i)
@@ -156,6 +156,16 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
                 .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
                 .Where(x => x.Name == "InvokeWithResultNoReturnValue")
                 .ToDictionary(k => k.GetGenericArguments().Length, v => v);
+        }
+
+        public static int GetMethodId(MethodInfo interfaceMethod)
+        {
+            return (int?)interfaceMethod.GetCustomAttributes()
+                .Where(x => x.GetType().Name is "MethodId" or "MethodIdAttribute")
+                .Select(x => (Attribute: x, Field: x.GetType().GetField("MethodId"), Property: x.GetType().GetProperty("MethodId")))
+                .Where(x => x.Field is not null || x.Property is not null)
+                .Select(x => x.Field?.GetValue(x.Attribute) ?? x.Property?.GetValue(x.Attribute))
+                .FirstOrDefault() ?? FNV1A32.GetHashCode(interfaceMethod.Name);
         }
 
         public static MethodInfo GetInvokeMethodInfo(MethodInfo interfaceMethod)
