@@ -15,20 +15,33 @@ public class RemoteClientResultPendingTaskRegistry : IRemoteClientResultPendingT
 {
     private readonly ConcurrentDictionary<Guid, (PendingTask Task, IDisposable CancelRegistration)> _pendingTasks = new();
     private readonly TimeSpan _timeout;
+    private readonly TimeProvider _timeProvider;
     private bool _disposed;
 
     public int Count => _pendingTasks.Count; // for unit tests
 
-    public RemoteClientResultPendingTaskRegistry(TimeSpan? timeout = default)
+    public RemoteClientResultPendingTaskRegistry(TimeSpan? timeout = default, TimeProvider? timeProvider = default)
     {
         _timeout = timeout ?? TimeSpan.FromSeconds(5);
+        _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
     public PendingTask CreateTask<TResult>(string methodName, int methodId, Guid messageId, TaskCompletionSource<TResult> taskCompletionSource, CancellationToken timeoutCancellationToken, IRemoteSerializer serializer)
-        => PendingTask.Create<TResult>(methodName, methodId, messageId, taskCompletionSource, timeoutCancellationToken.CanBeCanceled ? timeoutCancellationToken : new CancellationTokenSource(_timeout).Token, serializer);
+        => PendingTask.Create<TResult>(methodName, methodId, messageId, taskCompletionSource, CreateTimeoutCancellationToken(timeoutCancellationToken), serializer);
 
     public PendingTask CreateTask(string methodName, int methodId, Guid messageId, TaskCompletionSource taskCompletionSource, CancellationToken timeoutCancellationToken, IRemoteSerializer serializer)
-        => PendingTask.Create(methodName, methodId, messageId, taskCompletionSource, timeoutCancellationToken.CanBeCanceled ? timeoutCancellationToken : new CancellationTokenSource(_timeout).Token, serializer);
+        => PendingTask.Create(methodName, methodId, messageId, taskCompletionSource, CreateTimeoutCancellationToken(timeoutCancellationToken), serializer);
+
+    private CancellationToken CreateTimeoutCancellationToken(CancellationToken timeoutCancellationToken)
+    {
+        return timeoutCancellationToken.CanBeCanceled
+            ? timeoutCancellationToken
+#if NET8_0_OR_GREATER
+            : new CancellationTokenSource(_timeout, _timeProvider).Token;
+#else
+            : new CancellationTokenSource(_timeout).Token;
+#endif
+    }
 
     public void Register(PendingTask pendingTask)
     {
