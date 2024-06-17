@@ -19,6 +19,9 @@ public interface ITestReceiver
 
     Task<string> ClientResult_Cancellation(int delayMilliseconds, CancellationToken cancellationToken);
     Task<string> ClientResult_Throw();
+
+    [MethodId(12345)]
+    void CustomMethodId();
 }
 
 public class TestInMemoryReceiver : ITestReceiver
@@ -97,4 +100,14 @@ public class TestInMemoryReceiver : ITestReceiver
         await Task.Delay(500);
         throw new InvalidOperationException("Something went wrong.");
     }
+
+    public void CustomMethodId()
+    {
+        Received.Add((nameof(CustomMethodId), ParameterZeroArgument));
+    }
+}
+
+internal class MethodIdAttribute(int methodId) : Attribute
+{
+    public readonly int MethodId = methodId;
 }

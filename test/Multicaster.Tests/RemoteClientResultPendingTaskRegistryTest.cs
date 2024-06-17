@@ -1,5 +1,7 @@
 ﻿using Cysharp.Runtime.Multicast.Remoting;
 
+using Microsoft.Extensions.Time.Testing;
+
 namespace Multicaster.Tests;
 
 public class RemoteClientResultPendingTaskRegistryTest
@@ -50,7 +52,8 @@ public class RemoteClientResultPendingTaskRegistryTest
     public async Task Timeout()
     {
         // Arrange
-        using var reg = new RemoteClientResultPendingTaskRegistry(TimeSpan.FromMilliseconds(500));
+        var timeProvider = new FakeTimeProvider();
+        using var reg = new RemoteClientResultPendingTaskRegistry(TimeSpan.FromMilliseconds(500), timeProvider);
         var serializer = new TestJsonRemoteSerializer();
         var tcs1 = new TaskCompletionSource<bool>();
         var pendingTask1 = reg.CreateTask("Foo", 0, Guid.NewGuid(), tcs1, default, serializer);
@@ -59,15 +62,15 @@ public class RemoteClientResultPendingTaskRegistryTest
         var pendingTask2 = reg.CreateTask("Foo", 0, Guid.NewGuid(), tcs2, default, serializer);
         reg.Register(pendingTask2);
         var tcs3 = new TaskCompletionSource();
-        var pendingTask3 = reg.CreateTask("Bar", 0, Guid.NewGuid(), tcs3, new CancellationTokenSource(TimeSpan.FromMilliseconds(10)).Token, serializer);
+        var pendingTask3 = reg.CreateTask("Bar", 0, Guid.NewGuid(), tcs3, new CancellationTokenSource(TimeSpan.FromMilliseconds(10), timeProvider).Token, serializer);
         reg.Register(pendingTask3);
 
         // Act
-        await Task.Delay(100);
+        timeProvider.Advance(TimeSpan.FromSeconds(100));
         var beforeSecondDelayTcs1IsCanceled = tcs1.Task.IsCanceled;
         var beforeSecondDelayTcs2IsCanceled = tcs2.Task.IsCanceled;
         var beforeSecondDelayTcs3IsCanceled = tcs3.Task.IsCanceled;
-        await Task.Delay(600);
+        timeProvider.Advance(TimeSpan.FromSeconds(500));
 
         // Assert
         Assert.False(beforeSecondDelayTcs1IsCanceled);

@@ -3,6 +3,8 @@ using System.Text.Json.Nodes;
 
 using Cysharp.Runtime.Multicast.Remoting;
 
+using Microsoft.Extensions.Time.Testing;
+
 namespace Multicaster.Tests;
 
 public class RemoteGroupClientResultTest
@@ -73,7 +75,8 @@ public class RemoteGroupClientResultTest
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
-        var pendingTasks = new RemoteClientResultPendingTaskRegistry(TimeSpan.FromMilliseconds(500)); // Use the specified timeout period.
+        var timeProvider = new FakeTimeProvider();
+        var pendingTasks = new RemoteClientResultPendingTaskRegistry(TimeSpan.FromMilliseconds(250), timeProvider); // Use the specified timeout period.
 
         var receiverWriterA = new TestRemoteReceiverWriter();
         var proxy = proxyFactory.CreateDirect<ITestReceiver>(receiverWriterA, serializer, pendingTasks);
@@ -85,7 +88,7 @@ public class RemoteGroupClientResultTest
         Assert.Equal(1, pendingTasks.Count);
 
         // Wait for timeout...
-        await Task.Delay(TimeSpan.FromMilliseconds(750));
+        timeProvider.Advance(TimeSpan.FromMilliseconds(750));
 
         // The task should be canceled by timeout and removed from pending tasks.
         Assert.True(task.IsCompleted);
@@ -103,17 +106,17 @@ public class RemoteGroupClientResultTest
 
         var receiverWriterA = new TestRemoteReceiverWriter();
         var proxy = proxyFactory.CreateDirect<ITestReceiver>(receiverWriterA, serializer, pendingTasks);
-        var cts = new CancellationTokenSource();
+        var timeProvider = new FakeTimeProvider();
+        var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(250), timeProvider);
 
         // Act & Assert
-        cts.CancelAfter(250);
         var task = proxy.ClientResult_Cancellation(5000, cts.Token);
         Assert.False(task.IsCompleted);
         Assert.NotEmpty(receiverWriterA.Written);
         Assert.Equal(1, pendingTasks.Count);
 
         // Wait for timeout...
-        await Task.Delay(TimeSpan.FromMilliseconds(500));
+        timeProvider.Advance(TimeSpan.FromMilliseconds(500));
 
         // The task should be canceled by timeout and removed from pending tasks.
         Assert.True(task.IsCompleted);
