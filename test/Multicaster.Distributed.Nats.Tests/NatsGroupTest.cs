@@ -104,7 +104,6 @@ public class NatsGroupTest
         Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverD.Writer.Written);
     }
 
-
     [Fact]
     public async Task RemoveAllMembersAndUnsubscribe()
     {
@@ -136,7 +135,7 @@ public class NatsGroupTest
 
         group.Remove(receiverA.Id);
         group.Remove(receiverB.Id); // All members of the `group` are removed from the group. `group` will unsubscribe the channel.
-
+        
         group2.All.Parameter_One(5678);
 
         // We need to wait to receive the message from NATS.
@@ -146,6 +145,95 @@ public class NatsGroupTest
         Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}"""], receiverA.Writer.Written);
         Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}"""], receiverB.Writer.Written);
         Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverC.Writer.Written);
+        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverD.Writer.Written);
+    }
+
+    [Fact]
+    public async Task RemoveViaOtherGroupProvider()
+    {
+        // Arrange
+        var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var serializer = new TestJsonRemoteSerializer();
+        var receiverA = TestNatsReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverB = TestNatsReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverC = TestNatsReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverD = TestNatsReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+
+        IMulticastGroupProvider groupProvider = new NatsGroupProvider(proxyFactory, serializer, new NatsGroupOptions() { Url = _natsContainer.GetConnectionString() });
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
+        IMulticastGroupProvider groupProvider2 = new NatsGroupProvider(proxyFactory, serializer, new NatsGroupOptions() { Url = _natsContainer.GetConnectionString() });
+        using var group2 = groupProvider2.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
+
+        // MyGroup
+        //   - GroupProvider(1): A, B
+        //   - GroupProvider(2): C, D
+        group.Add(receiverA.Id, receiverA.Proxy);
+        group.Add(receiverB.Id, receiverB.Proxy);
+        group2.Add(receiverC.Id, receiverC.Proxy);
+        group2.Add(receiverD.Id, receiverD.Proxy);
+
+        // Act
+        group.Remove(receiverC.Id); // Remove C on GroupProvider(2) via GroupProvider(1).
+        group2.Remove(receiverA.Id); // Remove A on GroupProvider(1) via GroupProvider(2).
+        await Task.Delay(100); // We need to wait to receive the message from NATS.
+        group.All.Parameter_One(1234);
+        await Task.Delay(250); // Ensure order of transmission
+        group2.All.Parameter_One(5678);
+        await Task.Delay(100); // We need to wait to receive the message from NATS.
+
+        // Assert
+        // MyGroup
+        //   - GroupProvider(1): B
+        //   - GroupProvider(2): D
+        Assert.Equal([], receiverA.Writer.Written);
+        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverB.Writer.Written);
+        Assert.Equal([], receiverC.Writer.Written);
+        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverD.Writer.Written);
+    }
+
+    [Fact]
+    public async Task RemoveViaOtherGroupProvider_Async()
+    {
+        // Arrange
+        var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var serializer = new TestJsonRemoteSerializer();
+        var receiverA = TestNatsReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverB = TestNatsReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverC = TestNatsReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverD = TestNatsReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+
+        IMulticastGroupProvider groupProvider = new NatsGroupProvider(proxyFactory, serializer, new NatsGroupOptions() { Url = _natsContainer.GetConnectionString() });
+        var group = groupProvider.GetOrAddGroup<Guid, ITestReceiver>("MyGroup");
+        IMulticastGroupProvider groupProvider2 = new NatsGroupProvider(proxyFactory, serializer, new NatsGroupOptions() { Url = _natsContainer.GetConnectionString() });
+        using var group2 = groupProvider2.GetOrAddGroup<Guid, ITestReceiver>("MyGroup");
+
+        // MyGroup
+        //   - GroupProvider(1): A, B
+        //   - GroupProvider(2): C, D
+        await group.AddAsync(receiverA.Id, receiverA.Proxy);
+        await group.AddAsync(receiverB.Id, receiverB.Proxy);
+        await group2.AddAsync(receiverC.Id, receiverC.Proxy);
+        await group2.AddAsync(receiverD.Id, receiverD.Proxy);
+
+        // Act
+        await group.RemoveAsync(receiverC.Id); // Remove C on GroupProvider(2) via GroupProvider(1).
+        await group2.RemoveAsync(receiverA.Id); // Remove A on GroupProvider(1) via GroupProvider(2).
+        
+        
+        await Task.Delay(100); // We need to wait to receive the message from NATS.
+        group.All.Parameter_One(1234);
+        await Task.Delay(250); // Ensure order of transmission
+        group2.All.Parameter_One(5678);
+        await Task.Delay(100); // We need to wait to receive the message from NATS.
+
+        // Assert
+        // MyGroup
+        //   - GroupProvider(1): B
+        //   - GroupProvider(2): D
+        if (receiverB.Writer.Written[0].Contains("5678")) System.Diagnostics.Debugger.Break();
+        Assert.Equal([], receiverA.Writer.Written);
+        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverB.Writer.Written);
+        Assert.Equal([], receiverC.Writer.Written);
         Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverD.Writer.Written);
     }
 

@@ -1,6 +1,8 @@
 ﻿using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
+using System.Threading.Channels;
+
 using Cysharp.Runtime.Multicast.Internal;
 using Cysharp.Runtime.Multicast.Remoting;
 using MessagePack;
@@ -70,6 +72,7 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
             writer.Flush();
             bufferWriter.Write(payload.Span);
 
+            System.Diagnostics.Debug.WriteLine($"Publish Broadcast: {System.Text.Encoding.UTF8.GetString(bufferWriter.WrittenMemory.Span)}");
             var taskPublish = _connection.PublishAsync(_subject, bufferWriter.WrittenMemory);
             if (!taskPublish.IsCompletedSuccessfully)
             {
@@ -137,15 +140,31 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (_receivers.Remove(key, out _) && _receivers.Count == 0)
+            if (!await TryRemoveCoreAsync(key).ConfigureAwait(false))
             {
-                await UnsubscribeAsync();
+                // If the target key does not exist in the local group, a remove message is notified to another server.
+                var message = BuildRemoveMessage(key);
+                await _connection.PublishAsync(_subject, message).ConfigureAwait(false);
             }
         }
         finally
         {
             _lock.Release();
         }
+    }
+
+    private async ValueTask<bool> TryRemoveCoreAsync(TKey key)
+    {
+        if (_receivers.Remove(key, out _))
+        {
+            if (_receivers.Count == 0)
+            {
+                await UnsubscribeAsync().ConfigureAwait(false);
+            }
+            return true;
+        }
+
+        return false;
     }
 
     public ValueTask<int> CountAsync(CancellationToken cancellationToken = default)
@@ -187,15 +206,36 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
         _lock.Wait();
         try
         {
-            if (_receivers.Remove(key, out _) && _receivers.Count == 0)
+            if (!TryRemoveCore(key))
             {
-                Unsubscribe();
+                // If the target key does not exist in the local group, a remove message is notified to another server.
+                var message = BuildRemoveMessage(key);
+                var taskPublish = _connection.PublishAsync(_subject, message);
+                if (!taskPublish.IsCompletedSuccessfully)
+                {
+                    taskPublish.GetAwaiter().GetResult();
+                }
             }
         }
         finally
         {
             _lock.Release();
         }
+    }
+
+    private bool TryRemoveCore(TKey key)
+    {
+        if (_receivers.Remove(key, out _))
+        {
+            if (_receivers.Count == 0)
+            {
+                Unsubscribe();
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     public int Count()
@@ -216,7 +256,7 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
             {
                 if (message.Data is { } data)
                 {
-                    HandleMessage(data);
+                    await HandleMessageAsync(data).ConfigureAwait(false);
                 }
             }
         });
@@ -235,7 +275,7 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
             {
                 if (message.Data is { } data)
                 {
-                    HandleMessage(data);
+                    await HandleMessageAsync(data).ConfigureAwait(false);
                 }
             }
         });
@@ -275,13 +315,17 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
         }
     }
 
-    private void HandleMessage(byte[] messageBytes)
+    private ValueTask HandleMessageAsync(byte[] messageBytes)
     {
         var reader = new MessagePackReader(messageBytes);
 
         var arrayLength = reader.ReadArrayHeader();
+
+        // Broadcast: Array(3)[[Excludes], [Targets], [Message]]
+        // Remove: Array(2)[0x0, Id]
         if (arrayLength == 3)
         {
+            // Broadcast
             var excludes = KeyArrayFormatter<TKey>.Deserialize(ref reader);
             var targets = KeyArrayFormatter<TKey>.Deserialize(ref reader);
             var payload = messageBytes.AsMemory((int)reader.Consumed);
@@ -293,7 +337,35 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
                 receiver.Value.Write(payload);
             }
         }
+        else if (arrayLength == 2)
+        {
+            // Remove
+            var type = reader.ReadByte();
+            var key = MessagePackSerializer.Deserialize<TKey>(ref reader);
+            return AwaitTryRemoveCore(key);
+        }
+
+        return default;
+
+        async ValueTask AwaitTryRemoveCore(TKey key)
+        {
+            await TryRemoveCoreAsync(key).ConfigureAwait(false);
+        }
     }
+
+    private byte[] BuildRemoveMessage(TKey key)
+    {
+        using var bufferWriter = ArrayPoolBufferWriter.RentThreadStaticWriter();
+        var writer = new MessagePackWriter(bufferWriter);
+
+        // Format: [0x0, Key]
+        writer.WriteArrayHeader(2);
+        writer.Write(0x0);
+        MessagePackSerializer.Serialize(ref writer, key);
+        writer.Flush();
+        return bufferWriter.WrittenMemory.ToArray();
+    }
+
     private void ThrowIfDisposed()
     {
         if (_disposed)

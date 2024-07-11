@@ -139,6 +139,94 @@ public class RedisGroupTest
     }
 
     [Fact]
+    public async Task RemoveViaOtherGroupProvider()
+    {
+        // Arrange
+        var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var serializer = new TestJsonRemoteSerializer();
+        var receiverA = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverB = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverC = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverD = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+
+        IMulticastGroupProvider groupProvider = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
+        IMulticastGroupProvider groupProvider2 = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
+        using var group2 = groupProvider2.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
+
+        // MyGroup
+        //   - GroupProvider(1): A, B
+        //   - GroupProvider(2): C, D
+        group.Add(receiverA.Id, receiverA.Proxy);
+        group.Add(receiverB.Id, receiverB.Proxy);
+        group2.Add(receiverC.Id, receiverC.Proxy);
+        group2.Add(receiverD.Id, receiverD.Proxy);
+
+        // Act
+        group.Remove(receiverC.Id); // Remove C on GroupProvider(2) via GroupProvider(1).
+        group2.Remove(receiverA.Id); // Remove A on GroupProvider(1) via GroupProvider(2).
+        // We need to wait to receive the message from Redis.
+        await Task.Delay(100);
+        group.All.Parameter_One(1234);
+        group2.All.Parameter_One(5678);
+        // We need to wait to receive the message from Redis.
+        await Task.Delay(100);
+
+        // Assert
+        // MyGroup
+        //   - GroupProvider(1): B
+        //   - GroupProvider(2): D
+        Assert.Equal([], receiverA.Writer.Written);
+        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverB.Writer.Written);
+        Assert.Equal([], receiverC.Writer.Written);
+        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverD.Writer.Written);
+    }
+
+    [Fact]
+    public async Task RemoveViaOtherGroupProvider_Async()
+    {
+        // Arrange
+        var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var serializer = new TestJsonRemoteSerializer();
+        var receiverA = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverB = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverC = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverD = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+
+        IMulticastGroupProvider groupProvider = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
+        var group = groupProvider.GetOrAddGroup<Guid, ITestReceiver>("MyGroup");
+        IMulticastGroupProvider groupProvider2 = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
+        using var group2 = groupProvider2.GetOrAddGroup<Guid, ITestReceiver>("MyGroup");
+
+        // MyGroup
+        //   - GroupProvider(1): A, B
+        //   - GroupProvider(2): C, D
+        await group.AddAsync(receiverA.Id, receiverA.Proxy);
+        await group.AddAsync(receiverB.Id, receiverB.Proxy);
+        await group2.AddAsync(receiverC.Id, receiverC.Proxy);
+        await group2.AddAsync(receiverD.Id, receiverD.Proxy);
+
+        // Act
+        await group.RemoveAsync(receiverC.Id); // Remove C on GroupProvider(2) via GroupProvider(1).
+        await group2.RemoveAsync(receiverA.Id); // Remove A on GroupProvider(1) via GroupProvider(2).
+        // We need to wait to receive the message from Redis.
+        await Task.Delay(100);
+        group.All.Parameter_One(1234);
+        group2.All.Parameter_One(5678);
+        // We need to wait to receive the message from Redis.
+        await Task.Delay(100);
+
+        // Assert
+        // MyGroup
+        //   - GroupProvider(1): B
+        //   - GroupProvider(2): D
+        Assert.Equal([], receiverA.Writer.Written);
+        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverB.Writer.Written);
+        Assert.Equal([], receiverC.Writer.Written);
+        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverD.Writer.Written);
+    }
+
+    [Fact]
     public async Task Parameter_Zero()
     {
         // Arrange
