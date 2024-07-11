@@ -62,7 +62,7 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
             using var bufferWriter = ArrayPoolBufferWriter.RentThreadStaticWriter();
             var writer = new MessagePackWriter(bufferWriter);
 
-            // redis-format: [[excludes], [targets], [raw-body]]
+            // Redis-format: [[excludes], [targets], [raw-body]]
             writer.WriteArrayHeader(3);
             KeyArrayFormatter<TKey>.Serialize(ref writer, _excludes.AsSpan());
             if (_targets is null)
@@ -108,6 +108,70 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
         _disposed = true;
     }
 
+    private void HandleMessage(ChannelMessage message) => HandleMessageCoreAsync(message, true);
+
+    private Task HandleMessageAsync(ChannelMessage message) => HandleMessageCoreAsync(message, false);
+
+    private Task HandleMessageCoreAsync(ChannelMessage message, bool isSynchronous)
+    {
+        var messageBytes = (byte[])message.Message!;
+        var reader = new MessagePackReader(messageBytes);
+
+        var arrayLength = reader.ReadArrayHeader();
+
+        // Broadcast: Array(3)[[Excludes], [Targets], [Message]]
+        // Remove: Array(2)[0x0, Id]
+        if (arrayLength == 3)
+        {
+            // Broadcast
+            var excludes = KeyArrayFormatter<TKey>.Deserialize(ref reader);
+            var targets = KeyArrayFormatter<TKey>.Deserialize(ref reader);
+            var payload = messageBytes.AsMemory((int)reader.Consumed);
+
+            foreach (var receiver in _receivers)
+            {
+                if (excludes is not null && excludes.Contains(receiver.Key)) continue;
+                if (targets is not null && !targets.Contains(receiver.Key)) continue;
+                receiver.Value.Write(payload);
+            }
+        }
+        else if (arrayLength == 2)
+        {
+            // Remove
+            var type = reader.ReadByte();
+            var key = MessagePackSerializer.Deserialize<TKey>(ref reader);
+            if (isSynchronous)
+            {
+                TryRemoveCore(key);
+                return Task.CompletedTask;
+            }
+            else
+            {
+                return AwaitTryRemoveCore(key);
+            }
+        }
+
+        return Task.CompletedTask;
+
+        async Task AwaitTryRemoveCore(TKey key)
+        {
+            await TryRemoveCoreAsync(key).ConfigureAwait(false);
+        }
+    }
+
+    private byte[] BuildRemoveMessage(TKey key)
+    {
+        using var bufferWriter = ArrayPoolBufferWriter.RentThreadStaticWriter();
+        var writer = new MessagePackWriter(bufferWriter);
+
+        // Format: [0x0, Key]
+        writer.WriteArrayHeader(2);
+        writer.Write(0x0);
+        MessagePackSerializer.Serialize(ref writer, key);
+        writer.Flush();
+        return bufferWriter.WrittenMemory.ToArray();
+    }
+
     public async ValueTask AddAsync(TKey key, T receiver, CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
@@ -142,9 +206,11 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (_receivers.Remove(key, out _) && _receivers.Count == 0)
+            if (!await TryRemoveCoreAsync(key).ConfigureAwait(false))
             {
-                await UnsubscribeAsync().ConfigureAwait(false);
+                // If the target key does not exist in the local group, a remove message is notified to another server.
+                var message = BuildRemoveMessage(key);
+                await _subscriber.PublishAsync(_channel, message).ConfigureAwait(false);
             }
         }
         finally
@@ -153,25 +219,42 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
         }
     }
 
-    private void HandleMessage(ChannelMessage message)
+    private async ValueTask<bool> TryRemoveCoreAsync(TKey key)
     {
-        var messageBytes = (byte[])message.Message!;
-        var reader = new MessagePackReader(messageBytes);
-
-        var arrayLength = reader.ReadArrayHeader();
-        if (arrayLength == 3)
+        if (_receivers.Remove(key, out _))
         {
-            var excludes = KeyArrayFormatter<TKey>.Deserialize(ref reader);
-            var targets = KeyArrayFormatter<TKey>.Deserialize(ref reader);
-            var payload = messageBytes.AsMemory((int)reader.Consumed);
-
-            foreach (var receiver in _receivers)
+            if (_receivers.Count == 0)
             {
-                if (excludes is not null && excludes.Contains(receiver.Key)) continue;
-                if (targets is not null && !targets.Contains(receiver.Key)) continue;
-                receiver.Value.Write(payload);
+                await UnsubscribeAsync().ConfigureAwait(false);
             }
+            return true;
         }
+
+        return false;
+    }
+
+    private async ValueTask SubscribeAsync()
+    {
+        if (_messageQueue is not null)
+        {
+            await _messageQueue.UnsubscribeAsync().ConfigureAwait(false);
+        }
+        _messageQueue = await _subscriber.SubscribeAsync(_channel).ConfigureAwait(false);
+        _messageQueue.OnMessage(HandleMessageAsync);
+    }
+
+    private async ValueTask UnsubscribeAsync()
+    {
+        if (_messageQueue is not null)
+        {
+            await _messageQueue.UnsubscribeAsync().ConfigureAwait(false);
+        }
+    }
+
+    public ValueTask<int> CountAsync(CancellationToken cancellationToken = default)
+    {
+        ThrowIfDisposed();
+        throw new NotSupportedException("CountAsync is not supported by this group and the group provider.");
     }
 
     private void Subscribe()
@@ -190,30 +273,6 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
         {
             _messageQueue.Unsubscribe();
         }
-    }
-
-    private async ValueTask SubscribeAsync()
-    {
-        if (_messageQueue is not null)
-        {
-            await _messageQueue.UnsubscribeAsync().ConfigureAwait(false);
-        }
-        _messageQueue = await _subscriber.SubscribeAsync(_channel).ConfigureAwait(false);
-        _messageQueue.OnMessage(HandleMessage);
-    }
-
-    private async ValueTask UnsubscribeAsync()
-    {
-        if (_messageQueue is not null)
-        {
-            await _messageQueue.UnsubscribeAsync().ConfigureAwait(false);
-        }
-    }
-
-    public ValueTask<int> CountAsync(CancellationToken cancellationToken = default)
-    {
-        ThrowIfDisposed();
-        throw new NotSupportedException("CountAsync is not supported by this group and the group provider.");
     }
 
     public void Add(TKey key, T receiver)
@@ -248,15 +307,32 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
         _lock.Wait();
         try
         {
-            if (_receivers.Remove(key, out _) && _receivers.Count == 0)
+            if (!TryRemoveCore(key))
             {
-                Unsubscribe();
+                // If the target key does not exist in the local group, a remove message is notified to another server.
+                var message = BuildRemoveMessage(key);
+                _subscriber.Publish(_channel, message);
             }
         }
         finally
         {
             _lock.Release();
         }
+    }
+
+    private bool TryRemoveCore(TKey key)
+    {
+        if (_receivers.Remove(key, out _))
+        {
+            if (_receivers.Count == 0)
+            {
+                Unsubscribe();
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     public int Count()
