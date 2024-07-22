@@ -9,7 +9,7 @@ The framework incorporates the concept of groups that bundle together the receiv
 ## Usage
 
 ### Basic Usage
-A Group is requested from `IMulticastGroupProvider` by specifying a name. If the Group does not exist, it will be created when it is requested.
+A Group is requested from `IMulticastGroupProvider` by specifying a name, key type, and calling interface. If the Group does not exist, it will be created when it is requested.
 There are synchronous and asynchronous operation versions of the Group, which can be selected according to the use case and supported functions.
 
 ```csharp
@@ -27,7 +27,7 @@ public class GreeterReceiver(string name) : IGreeterReceiver
 var group = groupProvider.GetOrAddSynchronousGroup<Guid, IGreeterReceiver>("MyGroup");
 ```
 
-You can register a receiver instance that implements the interface for the call to the retrieved Group.
+You can register a receiver instance that implements the interface for the call with the key to the retrieved Group.
 
 ```csharp
 var receiverId = Guid.NewGuid();
