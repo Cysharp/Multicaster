@@ -7,7 +7,56 @@ For instance, a single call to `IGreeter.Hello` can invoke methods on several ob
 The framework incorporates the concept of groups that bundle together the receivers (targets) to enable transparent invocation, allowing receivers to be added or removed flexibly from the group for ease of management.
 
 ## Usage
+
+### Basic Usage
+A Group is requested from `IMulticastGroupProvider` by specifying a name. If the Group does not exist, it will be created when it is requested.
+There are synchronous and asynchronous operation versions of the Group, which can be selected according to the use case and supported functions.
+
+```csharp
+public interface IGreeterReceiver
+{
+    void OnMessage(string sender, string message);
+}
+
+public class GreeterReceiver(string name) : IGreeterReceiver
+{
+    public void OnMessage(string sender, string message)
+        => Console.WriteLine($"[{name}] <{sender}> {message}")
+}
+
+var group = groupProvider.GetOrAddSynchronousGroup<Guid, IGreeterReceiver>("MyGroup");
+```
+
+You can register a receiver instance that implements the interface for the call to the retrieved Group.
+
+```csharp
+var receiverId = Guid.NewGuid();
+group.Add(receiverId, receiver);
+```
+
+>[!NOTE]
+In the case of MagicOnion, you can register the `Client` property that can be used in StreamingHub.
+
+You get a proxy object that calls the receiver via the Group's properties and methods such as `All`, `Except`, `Only`, and `Single`, and you can call the methods.
+
+```csharp
+group.All.OnMessage("A", "Hello");
+```
+
+Groups can be deleted from memory by calling `Dispose`. 
+
+```csharp
+group.Dispose();
+```
+
+>[!NOTE]
+> Note that this means that in-memory groups are completely deleted, but if Redis/NATS is used as the backplane, **they are only deleted from memory on the .NET server that called it, and not from other servers**.
+
 ### In-Memory (Plain Old CLR Object)
+Multicaster allows you to call the methods of multiple instances at once.
+
+For example, it is possible to call multiple instances that implement `IGreeterReceiver.OnMessage` at once. The code below is an example of this.
+
 ```csharp
 public interface IGreeterReceiver
 {
@@ -34,7 +83,7 @@ var receiverIdC = Guid.NewGuid();
 var groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
 
 // Create a group and add receivers to the group.
-var group = groupProvider.GetOrAddSynchronousGroup<Guid, IGreeterReceiver>("MyGroup");
+using var group = groupProvider.GetOrAddSynchronousGroup<Guid, IGreeterReceiver>("MyGroup");
 group.Add(receiverIdA, receiverA);
 group.Add(receiverIdB, receiverB);
 group.Add(receiverIdC, receiverC);
