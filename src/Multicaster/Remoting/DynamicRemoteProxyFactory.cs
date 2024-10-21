@@ -13,7 +13,7 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
 
     static DynamicRemoteProxyFactory()
     {
-        _assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName($"DynamicRemoteProxyFactory-{Guid.NewGuid()}"), AssemblyBuilderAccess.Run);
+        _assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName($"Cysharp.Runtime.Multicast.Remoting.DynamicRemoteProxyFactory-{Guid.NewGuid()}"), AssemblyBuilderAccess.Run);
         _moduleBuilder = _assemblyBuilder.DefineDynamicModule("Multicaster");
     }
 
