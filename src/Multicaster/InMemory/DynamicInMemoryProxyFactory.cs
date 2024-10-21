@@ -13,7 +13,7 @@ public class DynamicInMemoryProxyFactory : IInMemoryProxyFactory
 
     static DynamicInMemoryProxyFactory()
     {
-        _assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName($"DynamicInMemoryProxyFactory-{Guid.NewGuid()}"), AssemblyBuilderAccess.Run);
+        _assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName($"Cysharp.Runtime.Multicast.InMemory.DynamicInMemoryProxyFactory-{Guid.NewGuid()}"), AssemblyBuilderAccess.Run);
         _moduleBuilder = _assemblyBuilder.DefineDynamicModule("Multicaster");
     }
 
