@@ -1,6 +1,8 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 
 namespace Cysharp.Runtime.Multicast.InMemory;
 
@@ -28,7 +30,7 @@ public static class InMemoryProxyFactory
 public interface IReceiverHolder<TKey, T>
     where TKey : IEquatable<TKey>
 {
-    ReadOnlySpan<ReceiverRegistration<TKey, T>> AsSpan();
+    ReceiversSnapshot<ReceiverRegistration<TKey, T>> AsSnapshot();
 }
 
 public static class ReceiverHolder
@@ -58,8 +60,8 @@ public class ImmutableReceiverHolder<TKey, T> : IReceiverHolder<TKey, T>
 {
     private readonly ReceiverRegistration<TKey, T>[] _receivers;
 
-    public ReadOnlySpan<ReceiverRegistration<TKey, T>> AsSpan()
-        => _receivers.AsSpan();
+    public ReceiversSnapshot<ReceiverRegistration<TKey, T>> AsSnapshot()
+        => new(_receivers.AsSpan(), static _ => { }, default);
 
     public ImmutableReceiverHolder(IEnumerable<(TKey Key, T Receiver)> receivers)
         => _receivers = receivers.Select(x => new ReceiverRegistration<TKey, T>(x.Key, x.Receiver, HasKey: true)).ToArray();
@@ -74,24 +76,13 @@ public class ImmutableReceiverHolder<TKey, T> : IReceiverHolder<TKey, T>
 public class MutableReceiverHolder<TKey, T> : IReceiverHolder<TKey, T>
     where TKey : IEquatable<TKey>
 {
-    private readonly object _lock = new();
     private readonly List<ReceiverRegistration<TKey, T>> _receivers = new();
-    private ReceiverRegistration<TKey, T>[]? _receiversCache;
+    private readonly ReaderWriterLockSlim _lock = new();
 
-    public ReadOnlySpan<ReceiverRegistration<TKey, T>> AsSpan()
+    public ReceiversSnapshot<ReceiverRegistration<TKey, T>> AsSnapshot()
     {
-        if (_receiversCache is { } receiversCache)
-        {
-            return receiversCache.AsSpan();
-        }
-        else
-        {
-            lock (_lock)
-            {
-                _receiversCache ??= _receivers.ToArray();
-                return _receiversCache.AsSpan();
-            }
-        }
+        _lock.EnterReadLock();
+        return new ReceiversSnapshot<ReceiverRegistration<TKey, T>>(CollectionsMarshal.AsSpan(_receivers), static state => ((ReaderWriterLockSlim)state!).ExitReadLock(), _lock);
     }
 
     public MutableReceiverHolder(IEnumerable<(TKey, T)>? receivers = default)
@@ -101,39 +92,65 @@ public class MutableReceiverHolder<TKey, T> : IReceiverHolder<TKey, T>
 
     public void Add(TKey key, T receiver)
     {
-        lock (_lock)
+        _lock.EnterWriteLock();
+        try
         {
             _receivers.Add(new ReceiverRegistration<TKey, T>(key, receiver, HasKey: true));
-            _receiversCache = null;
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
         }
     }
 
     public bool Remove(TKey key)
     {
-        lock (_lock)
+        _lock.EnterWriteLock();
+        try
         {
             _receivers.RemoveAll(x => x.Key!.Equals(key));
-            _receiversCache = null;
-
-            return true;
         }
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
+        return true;
     }
 
     public int Count
     {
         get
         {
-            if (_receiversCache is { } receiversCache)
+            _lock.EnterReadLock();
+            try
             {
-                return receiversCache.Length;
+                return _receivers.Count;
             }
-            else
+            finally
             {
-                lock (_lock)
-                {
-                    return _receivers.Count;
-                }
+                _lock.ExitReadLock();
             }
         }
+    }
+}
+
+public readonly ref struct ReceiversSnapshot<T>
+{
+    private readonly ReadOnlySpan<T> _items;
+    private readonly Action<object?> _onDispose;
+    private readonly object? _state;
+
+    public ReadOnlySpan<T> AsSpan() => _items;
+
+    public ReceiversSnapshot(ReadOnlySpan<T> items, Action<object?> onDispose, object? state)
+    {
+        _items = items;
+        _onDispose = onDispose;
+        _state = state;
+    }
+
+    public void Dispose()
+    {
+        _onDispose(_state);
     }
 }
