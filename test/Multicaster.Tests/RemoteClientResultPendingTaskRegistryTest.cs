@@ -49,7 +49,7 @@ public class RemoteClientResultPendingTaskRegistryTest
     }
 
     [Fact]
-    public async Task Timeout()
+    public void Timeout()
     {
         // Arrange
         var timeProvider = new FakeTimeProvider();
