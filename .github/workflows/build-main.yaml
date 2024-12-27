@@ -17,9 +17,7 @@ jobs:
       - uses: Cysharp/Actions/.github/actions/setup-dotnet@main
       - run: dotnet tool restore
       - run: dotnet build -c Debug -p:DefineConstants=RUNNING_IN_CI
-      - run: dotnet build -c Release -p:DefineConstants=RUNNING_IN_CI
       - run: dotnet pack ./src/Multicaster/Multicaster.csproj -c Debug --no-build -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg
-      - run: dotnet retest -- -c Debug --no-build
       - run: dotnet retest -- -c Release --no-build
       - uses: Cysharp/Actions/.github/actions/upload-artifact@main
         with:
@@ -35,4 +33,4 @@ jobs:
       - uses: actions/checkout@v4
       - uses: Cysharp/Actions/.github/actions/setup-dotnet@main
       - run: dotnet build -c Release -p:DefineConstants=RUNNING_IN_CI
-      - run: dotnet test -c Release --no-build
+      - run: dotnet retest -- -c Release --no-build
