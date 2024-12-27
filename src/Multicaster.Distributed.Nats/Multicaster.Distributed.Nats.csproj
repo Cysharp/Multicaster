@@ -1,27 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-
     <PackageId>Multicaster.Distributed.Nats</PackageId>
     <AssemblyName>Cysharp.Runtime.$(PackageId)</AssemblyName>
     <RootNamespace>Cysharp.Runtime.Multicast.Distributed.Nats</RootNamespace>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="..\Multicaster\Internal\ThreadStaticArrayBufferWriter.cs" Link="Internal\ThreadStaticArrayBufferWriter.cs" />
   </ItemGroup>
-
   <ItemGroup>
-    <PackageReference Include="MessagePack" Version="2.5.187" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
-    <PackageReference Include="NATS.Net" Version="2.2.2" />
+    <PackageReference Include="MessagePack" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+    <PackageReference Include="NATS.Net" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\Multicaster\Multicaster.csproj" />
   </ItemGroup>
-
 </Project>

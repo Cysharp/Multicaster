@@ -1,27 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-
     <PackageId>Multicaster.Distributed.Redis</PackageId>
     <AssemblyName>Cysharp.Runtime.$(PackageId)</AssemblyName>
     <RootNamespace>Cysharp.Runtime.Multicast.Distributed.Redis</RootNamespace>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="..\Multicaster\Internal\ThreadStaticArrayBufferWriter.cs" Link="Internal\ThreadStaticArrayBufferWriter.cs" />
   </ItemGroup>
-
   <ItemGroup>
-    <PackageReference Include="MessagePack" Version="2.5.187" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
-    <PackageReference Include="StackExchange.Redis" Version="2.7.33" />
+    <PackageReference Include="MessagePack" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+    <PackageReference Include="StackExchange.Redis" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\Multicaster\Multicaster.csproj" />
   </ItemGroup>
-
 </Project>
