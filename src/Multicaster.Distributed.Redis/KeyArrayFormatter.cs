@@ -9,12 +9,6 @@ internal static class KeyArrayFormatter<TKey>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void Serialize(ref MessagePackWriter writer, ReadOnlySpan<TKey> values)
     {
-        if (values == null)
-        {
-            writer.WriteNil();
-            return;
-        }
-
         writer.WriteArrayHeader(values.Length);
         foreach (var value in values)
         {
