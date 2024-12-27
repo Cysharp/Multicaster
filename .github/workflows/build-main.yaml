@@ -32,5 +32,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: Cysharp/Actions/.github/actions/setup-dotnet@main
+      - run: dotnet tool restore
       - run: dotnet build -c Release -p:DefineConstants=RUNNING_IN_CI
       - run: dotnet retest -- -c Release --no-build
