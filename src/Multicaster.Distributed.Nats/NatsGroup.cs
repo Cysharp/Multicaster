@@ -81,16 +81,16 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
         }
     }
 
-    public T Except(ImmutableArray<TKey> excludes)
+    public T Except(IEnumerable<TKey> excludes)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Create<T>(new NatsPublishWriter(_connection, _subject, excludes, null), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
+        return _proxyFactory.Create<T>(new NatsPublishWriter(_connection, _subject, [..excludes], null), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
     }
 
-    public T Only(ImmutableArray<TKey> targets)
+    public T Only(IEnumerable<TKey> targets)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Create<T>(new NatsPublishWriter(_connection, _subject, ImmutableArray<TKey>.Empty, targets), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
+        return _proxyFactory.Create<T>(new NatsPublishWriter(_connection, _subject, ImmutableArray<TKey>.Empty, [..targets]), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
     }
 
     public T Single(TKey target)

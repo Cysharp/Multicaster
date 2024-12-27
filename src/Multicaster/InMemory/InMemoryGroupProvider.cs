@@ -1,8 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Immutable;
 
-using static System.Net.Mime.MediaTypeNames;
-
 namespace Cysharp.Runtime.Multicast.InMemory;
 
 public class InMemoryGroupProvider : IMulticastGroupProvider
@@ -48,16 +46,16 @@ internal class InMemoryGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticas
         All = _proxyFactory.Create(_receivers);
     }
 
-    public T Except(ImmutableArray<TKey> excludes)
+    public T Except(IEnumerable<TKey> excludes)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Except(_receivers, excludes);
+        return _proxyFactory.Except(_receivers, [..excludes]);
     }
 
-    public T Only(ImmutableArray<TKey> targets)
+    public T Only(IEnumerable<TKey> targets)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Only(_receivers, targets);
+        return _proxyFactory.Only(_receivers, [..targets]);
     }
 
     public T Single(TKey target)

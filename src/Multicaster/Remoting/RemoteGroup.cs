@@ -72,16 +72,16 @@ internal class RemoteGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastS
         return _receivers.Count;
     }
 
-    public T Except(ImmutableArray<TKey> excludes)
+    public T Except(IEnumerable<TKey> excludes)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Except<TKey, T>(_receivers, excludes, _serializer, _pendingTasks);
+        return _proxyFactory.Except<TKey, T>(_receivers, [..excludes], _serializer, _pendingTasks);
     }
 
-    public T Only(ImmutableArray<TKey> targets)
+    public T Only(IEnumerable<TKey> targets)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Only<TKey, T>(_receivers, targets, _serializer, _pendingTasks);
+        return _proxyFactory.Only<TKey, T>(_receivers, [..targets], _serializer, _pendingTasks);
     }
 
     public T Single(TKey target)
