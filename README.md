@@ -113,8 +113,8 @@ receiverA.OnMessage("DirectMessage", "Sent a message to the receiver directly.")
 
 ### `IMulticastGroup<TKey, T>` interface
 - `TReceiver All { get; }`
-- `TReceiver Except(ImmutableArray<TKey> excludes);`
-- `TReceiver Only(ImmutableArray<TKey> targets);`
+- `TReceiver Except(IEnumerable<TKey> excludes);`
+- `TReceiver Only(IEnumerable<TKey> targets);`
 - `TReceiver Single(TKey target);`
 - `void Dispose()`
     - Dispose and unregister the group from a group provider.
