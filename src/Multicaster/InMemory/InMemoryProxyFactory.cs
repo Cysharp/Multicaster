@@ -75,25 +75,36 @@ public class MutableReceiverHolder<TKey, T> : IReceiverHolder<TKey, T>
     where TKey : IEquatable<TKey>
 {
     private readonly object _lock = new();
-    private ReceiverRegistration<TKey, T>[] _receivers;
+    private readonly List<ReceiverRegistration<TKey, T>> _receivers = new();
+    private ReceiverRegistration<TKey, T>[]? _receiversCache;
 
     public ReadOnlySpan<ReceiverRegistration<TKey, T>> AsSpan()
-        => _receivers.AsSpan();
+    {
+        if (_receiversCache is { } receiversCache)
+        {
+            return receiversCache.AsSpan();
+        }
+        else
+        {
+            lock (_lock)
+            {
+                _receiversCache ??= _receivers.ToArray();
+                return _receiversCache.AsSpan();
+            }
+        }
+    }
 
     public MutableReceiverHolder(IEnumerable<(TKey, T)>? receivers = default)
     {
-        _receivers = receivers?.Select(x => new ReceiverRegistration<TKey, T>(x.Item1, x.Item2, HasKey: true)).ToArray() ?? Array.Empty<ReceiverRegistration<TKey, T>>();
+        _receivers.AddRange(receivers?.Select(x => new ReceiverRegistration<TKey, T>(x.Item1, x.Item2, HasKey: true)) ?? Array.Empty<ReceiverRegistration<TKey, T>>());
     }
 
     public void Add(TKey key, T receiver)
     {
         lock (_lock)
         {
-            var newReceivers = new ReceiverRegistration<TKey, T>[_receivers.Length + 1];
-            _receivers.CopyTo(newReceivers, 0);
-            newReceivers[^1] = new ReceiverRegistration<TKey, T>(key, receiver, HasKey: true);
-
-            _receivers = newReceivers;
+            _receivers.Add(new ReceiverRegistration<TKey, T>(key, receiver, HasKey: true));
+            _receiversCache = null;
         }
     }
 
@@ -101,21 +112,28 @@ public class MutableReceiverHolder<TKey, T> : IReceiverHolder<TKey, T>
     {
         lock (_lock)
         {
-            var index = Array.FindIndex(_receivers, x => x.Key!.Equals(key));
-            if (index == -1) return false;
-
-            var newReceivers = new ReceiverRegistration<TKey, T>[_receivers.Length - 1];
-            _receivers.AsSpan(0, index).CopyTo(newReceivers);
-            if (index != _receivers.Length)
-            {
-                _receivers.AsSpan(index + 1).CopyTo(newReceivers.AsSpan(index));
-            }
-            _receivers = newReceivers;
+            _receivers.RemoveAll(x => x.Key!.Equals(key));
+            _receiversCache = null;
 
             return true;
         }
     }
 
     public int Count
-        => _receivers.Length;
+    {
+        get
+        {
+            if (_receiversCache is { } receiversCache)
+            {
+                return receiversCache.Length;
+            }
+            else
+            {
+                lock (_lock)
+                {
+                    return _receivers.Count;
+                }
+            }
+        }
+    }
 }
