@@ -44,8 +44,8 @@ public class DynamicInMemoryProxyFactory : IInMemoryProxyFactory
             {
                 if (method.ReturnType == typeof(void))
                 {
-                    // Fire-and-forget
-                    // Action<T, T1, T2...>
+                    // Fire-and-forget (void)
+                    // Action<TTarget, T1, T2...>
                     Type[] delegateParamTypes = [typeof(T), .. method.GetParameters().Select(x => x.ParameterType)];
                     var delegateType = (method.GetParameters().Length switch
                     {
@@ -68,7 +68,7 @@ public class DynamicInMemoryProxyFactory : IInMemoryProxyFactory
                         _ => throw new NotImplementedException(),
                     }).MakeGenericType(delegateParamTypes);
 
-                    // Invoke<T1, T2...>(T1, T2, ..., Action<T, T1, T2...>)
+                    // Invoke<T1, T2...>(T1, T2, ..., Action<TTarget, T1, T2...>)
                     var methodInvoke = typeof(InMemoryProxyBase<TKey, T>).GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
                         .Single(x => x.Name == "Invoke" && x.GetGenericArguments().Length == method.GetParameters().Length);
                     if (methodInvoke.ContainsGenericParameters)
@@ -78,7 +78,7 @@ public class DynamicInMemoryProxyFactory : IInMemoryProxyFactory
 
                     // private static readonly Action<...> _thunk{MethodName}Delegate;
                     var fieldDelegate = typeBuilder.DefineField($"_thunk{method.Name}Delegate", delegateType, FieldAttributes.Private | FieldAttributes.Static);
-                    // private static void _Thunk_{MethodName}(T self, T1 arg1, T2 arg2...) => self.MethodName(arg1, arg2...);
+                    // private static void _Thunk_{MethodName}(TTarget self, T1 arg1, T2 arg2...) => self.MethodName(arg1, arg2...);
                     var methodThunk = typeBuilder.DefineMethod($"_Thunk_{method.Name}", MethodAttributes.Private | MethodAttributes.Static, typeof(void), delegateParamTypes);
                     {
                         var il = methodThunk.GetILGenerator();

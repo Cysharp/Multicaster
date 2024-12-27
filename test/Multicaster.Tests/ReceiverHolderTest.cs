@@ -14,7 +14,8 @@ public class ImmutableReceiverHolderTest
         var holder = ReceiverHolder.CreateImmutable<string, ITestReceiver>([receiverA, receiverB, receiverC]);
 
         // Act
-        var receivers = holder.AsSpan().ToArray();
+        using var snapshot = holder.AsSnapshot();
+        var receivers = snapshot.AsSpan().ToArray();
 
         // Assert
         Assert.Equal([
@@ -39,7 +40,8 @@ public class MutableReceiverHolderTest
 
         // Act
         var holder = ReceiverHolder.CreateMutableWithInitialReceivers<string, ITestReceiver>(initialReceivers);
-        var receivers = holder.AsSpan().ToArray();
+        using var snapshot = holder.AsSnapshot();
+        var receivers = snapshot.AsSpan().ToArray();
 
         // Assert
         Assert.Equal([
@@ -61,7 +63,8 @@ public class MutableReceiverHolderTest
         var holder = ReceiverHolder.CreateMutableWithInitialReceivers<string, ITestReceiver>(initialReceivers);
 
         // Act
-        var receivers = holder.AsSpan().ToArray();
+        using var snapshot = holder.AsSnapshot();
+        var receivers = snapshot.AsSpan().ToArray();
         initialReceivers.Add(("D", receiverD));
 
         // Assert
@@ -87,7 +90,8 @@ public class MutableReceiverHolderTest
         holder.Add("B", receiverB);
         holder.Add("C", receiverC);
         holder.Add("D", receiverD);
-        var receivers = holder.AsSpan().ToArray();
+        using var snapshot = holder.AsSnapshot();
+        var receivers = snapshot.AsSpan().ToArray();
 
         // Assert
         Assert.Equal([
@@ -115,7 +119,8 @@ public class MutableReceiverHolderTest
 
         // Act
         holder.Remove("C");
-        var receivers = holder.AsSpan().ToArray();
+        using var snapshot = holder.AsSnapshot();
+        var receivers = snapshot.AsSpan().ToArray();
 
         // Assert
         Assert.Equal([
