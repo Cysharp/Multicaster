@@ -64,13 +64,13 @@ internal class RemoteCompositeGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IM
         All = memoryProxyFactory.Create<TKey, T>(ReceiverHolder.CreateImmutable<TKey, T>(_memoryGroup.All, _remoteGroup.All));
     }
 
-    public T Except(ImmutableArray<TKey> excludes)
+    public T Except(IEnumerable<TKey> excludes)
     {
         ThrowIfDisposed();
         return _memoryProxyFactory.Create(ReceiverHolder.CreateImmutable<TKey, T>(_memoryGroup.Except(excludes), _remoteGroup.Except(excludes)));
     }
 
-    public T Only(ImmutableArray<TKey> targets)
+    public T Only(IEnumerable<TKey> targets)
     {
         ThrowIfDisposed();
         return _memoryProxyFactory.Create(ReceiverHolder.CreateImmutable<TKey, T>(_memoryGroup.Only(targets), _remoteGroup.Only(targets)));

@@ -80,16 +80,16 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
         }
     }
 
-    public T Except(ImmutableArray<TKey> excludes)
+    public T Except(IEnumerable<TKey> excludes)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Create<T>(new RedisPublishWriter(_subscriber, _channel, excludes, null), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
+        return _proxyFactory.Create<T>(new RedisPublishWriter(_subscriber, _channel, [..excludes], null), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
     }
 
-    public T Only(ImmutableArray<TKey> targets)
+    public T Only(IEnumerable<TKey> targets)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Create<T>(new RedisPublishWriter(_subscriber, _channel, ImmutableArray<TKey>.Empty, targets), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
+        return _proxyFactory.Create<T>(new RedisPublishWriter(_subscriber, _channel, ImmutableArray<TKey>.Empty, [..targets]), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
     }
 
     public T Single(TKey target)
