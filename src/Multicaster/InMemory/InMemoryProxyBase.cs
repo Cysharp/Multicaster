@@ -9,12 +9,14 @@ public abstract class InMemoryProxyBase<TKey, T>
     private readonly IReceiverHolder<TKey, T> _receivers;
     private readonly ImmutableArray<TKey> _excludes;
     private readonly ImmutableArray<TKey>? _targets;
+    private readonly bool _alwaysInvokable;
 
     public InMemoryProxyBase(IReceiverHolder<TKey, T> receivers, ImmutableArray<TKey> excludes, ImmutableArray<TKey>? targets)
     {
         _receivers = receivers;
         _excludes = excludes;
         _targets = targets;
+        _alwaysInvokable = _excludes.IsEmpty && _targets is null;
     }
 
     protected void Invoke(Action<T> invoker)
@@ -22,7 +24,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 invoker(receiverRegistration.Receiver);
@@ -38,7 +40,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 invoker(receiverRegistration.Receiver, arg1);
@@ -54,7 +56,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 invoker(receiverRegistration.Receiver, arg1, arg2);
@@ -70,7 +72,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 invoker(receiverRegistration.Receiver, arg1, arg2, arg3);
@@ -86,7 +88,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4);
@@ -102,7 +104,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5);
@@ -118,7 +120,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6);
@@ -134,7 +136,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
@@ -150,7 +152,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
@@ -166,7 +168,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
@@ -182,7 +184,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
@@ -198,7 +200,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
@@ -214,7 +216,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
@@ -230,7 +232,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13);
@@ -246,7 +248,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14);
@@ -263,7 +265,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 return invoker(receiverRegistration.Receiver);
@@ -281,7 +283,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 return invoker(receiverRegistration.Receiver, arg1);
@@ -299,7 +301,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 return invoker(receiverRegistration.Receiver, arg1, arg2);
@@ -317,7 +319,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 return invoker(receiverRegistration.Receiver, arg1, arg2, arg3);
@@ -335,7 +337,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4);
@@ -353,7 +355,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5);
@@ -371,7 +373,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6);
@@ -389,7 +391,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
@@ -407,7 +409,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
@@ -425,7 +427,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
@@ -443,7 +445,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
@@ -461,7 +463,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
@@ -479,7 +481,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
@@ -497,7 +499,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13);
@@ -515,7 +517,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14);
@@ -533,7 +535,7 @@ public abstract class InMemoryProxyBase<TKey, T>
         using var snapshot = _receivers.AsSnapshot();
         foreach (var receiverRegistration in snapshot.AsSpan())
         {
-            if (!CanInvoke(receiverRegistration)) continue;
+            if (!_alwaysInvokable && !CanInvoke(receiverRegistration)) continue;
             try
             {
                 return invoker(receiverRegistration.Receiver, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15);
@@ -557,5 +559,4 @@ public abstract class InMemoryProxyBase<TKey, T>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool CanInvoke(ReceiverRegistration<TKey, T> r)
         => !r.HasKey || r.Key is null || (!_excludes.Contains(r.Key) && (_targets is null || _targets.Value.Contains(r.Key)));
-
 }
