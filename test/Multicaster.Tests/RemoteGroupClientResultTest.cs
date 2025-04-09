@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Cysharp.Runtime.Multicast.InMemory;
 using Cysharp.Runtime.Multicast.Remoting;
 
 using Microsoft.Extensions.Time.Testing;
@@ -129,5 +130,111 @@ public class RemoteGroupClientResultTest
         Assert.Equal(5000, ((JsonElement)invocationMessage.Arguments[0]!).GetInt32());
 
         Assert.Equal(0, pendingTasks.Count);
+    }
+
+    [Fact]
+    public async Task Group_Remote()
+    {
+        // Arrange
+        var inMemoryProxyFactory = DynamicInMemoryProxyFactory.Instance;
+        var remoteProxyFactory = DynamicRemoteProxyFactory.Instance;
+        var serializer = new TestJsonRemoteSerializer();
+        var pendingTasks = new RemoteClientResultPendingTaskRegistry();
+        var groupProvider = new RemoteGroupProvider(inMemoryProxyFactory, remoteProxyFactory, serializer, pendingTasks);
+
+        var receiverWriterA = new TestRemoteReceiverWriter();
+        var receiverInMemory = new TestInMemoryReceiver();
+        var group = groupProvider.GetOrAddSynchronousGroup<string, ITestReceiver>("Test");
+
+        group.Add("Remote", remoteProxyFactory.CreateDirect<ITestReceiver>(receiverWriterA, serializer, pendingTasks));
+        group.Add("InMemory", receiverInMemory);
+
+        // Act & Assert
+        var target = group.Single("Remote");
+        var resultTask = target.ClientResult_Parameter_One(456);
+        var invocationMessage = JsonSerializer.Deserialize<TestJsonRemoteSerializer.SerializedInvocation>(receiverWriterA.Written[0])!;
+        Assert.True(pendingTasks.TryGetAndUnregisterPendingTask(invocationMessage.MessageId!.Value, out var pendingTask));
+        pendingTask.TrySetResult("\"OK\""u8.ToArray());
+
+        var result = await resultTask;
+
+        // Assert
+        Assert.Empty(receiverInMemory.Received);
+        Assert.Equal("OK", result);
+        Assert.NotEmpty(receiverWriterA.Written);
+        Assert.Equal(nameof(ITestReceiver.ClientResult_Parameter_One), invocationMessage.MethodName);
+        Assert.Equal("456", invocationMessage.Arguments[0]?.ToString());
+    }
+
+    [Fact]
+    public async Task Group_InMemory()
+    {
+        // Arrange
+        var inMemoryProxyFactory = DynamicInMemoryProxyFactory.Instance;
+        var remoteProxyFactory = DynamicRemoteProxyFactory.Instance;
+        var serializer = new TestJsonRemoteSerializer();
+        var pendingTasks = new RemoteClientResultPendingTaskRegistry();
+        var groupProvider = new RemoteGroupProvider(inMemoryProxyFactory, remoteProxyFactory, serializer, pendingTasks);
+
+        var receiverWriterA = new TestRemoteReceiverWriter();
+        var receiverInMemory = new TestInMemoryReceiver();
+        var group = groupProvider.GetOrAddSynchronousGroup<string, ITestReceiver>("Test");
+
+        group.Add("Remote", remoteProxyFactory.CreateDirect<ITestReceiver>(receiverWriterA, serializer, pendingTasks));
+        group.Add("InMemory", receiverInMemory);
+
+        // Act
+        var target = group.Single("InMemory");
+        var result = await target.ClientResult_Parameter_One(123);
+
+        // Assert
+        Assert.Empty(receiverWriterA.Written);
+        Assert.Single(receiverInMemory.Received);
+        Assert.Equal((nameof(ITestReceiver.ClientResult_Parameter_One), 123), receiverInMemory.Received[0]);
+        Assert.Equal($"{nameof(ITestReceiver.ClientResult_Parameter_One)}:123", result);
+    }
+
+    [Fact]
+    public async Task Group_NotSingle_NotSupported()
+    {
+        // Arrange
+        var inMemoryProxyFactory = DynamicInMemoryProxyFactory.Instance;
+        var remoteProxyFactory = DynamicRemoteProxyFactory.Instance;
+        var serializer = new TestJsonRemoteSerializer();
+        var pendingTasks = new RemoteClientResultPendingTaskRegistry();
+        var groupProvider = new RemoteGroupProvider(inMemoryProxyFactory, remoteProxyFactory, serializer, pendingTasks);
+
+        var receiverWriterA = new TestRemoteReceiverWriter();
+        var receiverInMemory = new TestInMemoryReceiver();
+        var group = groupProvider.GetOrAddSynchronousGroup<string, ITestReceiver>("Test");
+
+        group.Add("Remote", remoteProxyFactory.CreateDirect<ITestReceiver>(receiverWriterA, serializer, pendingTasks));
+        group.Add("InMemory", receiverInMemory);
+
+        // Act & Assert
+        var target = group.All;
+        await Assert.ThrowsAsync<NotSupportedException>(async () => await target.ClientResult_Parameter_One(123));
+    }
+
+    [Fact]
+    public async Task Group_Only_One_NotSupported()
+    {
+        // Arrange
+        var inMemoryProxyFactory = DynamicInMemoryProxyFactory.Instance;
+        var remoteProxyFactory = DynamicRemoteProxyFactory.Instance;
+        var serializer = new TestJsonRemoteSerializer();
+        var pendingTasks = new RemoteClientResultPendingTaskRegistry();
+        var groupProvider = new RemoteGroupProvider(inMemoryProxyFactory, remoteProxyFactory, serializer, pendingTasks);
+
+        var receiverWriterA = new TestRemoteReceiverWriter();
+        var receiverInMemory = new TestInMemoryReceiver();
+        var group = groupProvider.GetOrAddSynchronousGroup<string, ITestReceiver>("Test");
+
+        group.Add("Remote", remoteProxyFactory.CreateDirect<ITestReceiver>(receiverWriterA, serializer, pendingTasks));
+        group.Add("InMemory", receiverInMemory);
+
+        // Act & Assert
+        var target = group.Only(["InMemory"]);
+        await Assert.ThrowsAsync<NotSupportedException>(async () => await target.ClientResult_Parameter_One(123));
     }
 }

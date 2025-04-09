@@ -79,7 +79,7 @@ internal class RemoteCompositeGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IM
     public T Single(TKey target)
     {
         ThrowIfDisposed();
-        return _memoryProxyFactory.Create(ReceiverHolder.CreateImmutable<TKey, T>(_memoryGroup.Single(target), _remoteGroup.Single(target)));
+        return _memoryProxyFactory.Create(ReceiverHolder.CreateImmutable<TKey, T>(_memoryGroup.Single(target), _remoteGroup.Single(target)), [], [target]);
     }
 
     public ValueTask AddAsync(TKey key, T receiver, CancellationToken cancellationToken = default)
