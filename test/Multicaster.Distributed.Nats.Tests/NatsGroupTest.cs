@@ -24,6 +24,11 @@ public class NatsGroupTest
         _natsContainer.StartAsync().GetAwaiter().GetResult();
     }
 
+    private static string CreateJsonSerializedInvocation(string nameOfMethod, IReadOnlyList<object?> args)
+        => CreateJsonSerializedInvocation(nameOfMethod, null, args);
+    private static string CreateJsonSerializedInvocation(string nameOfMethod, Guid? messageId, IReadOnlyList<object?> args)
+        => JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameOfMethod, FNV1A32.GetHashCode(nameOfMethod), messageId, args));
+
     [Fact]
     public async Task Broadcast()
     {
@@ -558,5 +563,100 @@ public class NatsGroupTest
         Assert.Equal([], receiverC.Writer.Written);
         Assert.Equal([], receiverD.Writer.Written);
         Assert.Equal(1, serializer.SerializeInvocationCallCount);
+    }
+
+
+    [Fact]
+    public async Task Single_Only_Except()
+    {
+        // Arrange
+        var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var serializer = new TestJsonRemoteSerializer();
+        var receiverA = TestNatsReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverB = TestNatsReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverC = TestNatsReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverD = TestNatsReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+
+        IMulticastGroupProvider groupProvider = new NatsGroupProvider(proxyFactory, serializer, new NatsGroupOptions() { Url = _natsContainer.GetConnectionString() });
+        using var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
+        IMulticastGroupProvider groupProvider2 = new NatsGroupProvider(proxyFactory, serializer, new NatsGroupOptions() { Url = _natsContainer.GetConnectionString() });
+        using var group2 = groupProvider2.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
+
+        // Act
+        group.Add(receiverA.Id, receiverA.Proxy);
+        group.Add(receiverB.Id, receiverB.Proxy);
+        group2.Add(receiverC.Id, receiverC.Proxy);
+        group2.Add(receiverD.Id, receiverD.Proxy);
+
+        // Wait for subscriptions to be established.
+        await Task.Delay(250);
+
+        // NOTE: NATS guarantees order per publisher, but not across publishers. In this case, each group is a publisher, so we need to call them in order to maintain order.
+        group.Single(receiverA.Id).Parameter_One(1234);
+        group.Only([receiverB.Id]).Parameter_One(4567);
+        group.Single(receiverC.Id).Parameter_One(9876);
+        group.Except([receiverA.Id, receiverB.Id, receiverC.Id]).Parameter_One(1098);
+        group2.Single(receiverA.Id).Parameter_One(5678);
+        group2.Only([receiverB.Id]).Parameter_One(8910);
+        group2.Single(receiverC.Id).Parameter_One(5432);
+        group2.Except([receiverA.Id, receiverB.Id, receiverC.Id]).Parameter_One(7654);
+
+        // We need to wait to receive the message from Redis.
+        await Task.Delay(250);
+
+        // Assert
+        System.Diagnostics.Debug.WriteLine("Assert#1");
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5678])], receiverA.Writer.Written);
+        System.Diagnostics.Debug.WriteLine("Assert#2");
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [4567]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [8910])], receiverB.Writer.Written);
+        System.Diagnostics.Debug.WriteLine("Assert#3");
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [9876]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5432])], receiverC.Writer.Written);
+        System.Diagnostics.Debug.WriteLine("Assert#4");
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1098]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [7654])], receiverD.Writer.Written);
+    }
+
+    [Fact]
+    public async Task KeysAreNotGuid()
+    {
+        // Arrange
+        var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var serializer = new TestJsonRemoteSerializer();
+        var receiverA = TestNatsReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverB = TestNatsReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverC = TestNatsReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverD = TestNatsReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+
+        IMulticastGroupProvider groupProvider = new NatsGroupProvider(proxyFactory, serializer, new NatsGroupOptions() { Url = _natsContainer.GetConnectionString() });
+        using var group = groupProvider.GetOrAddSynchronousGroup<string, ITestReceiver>("MyGroup");
+        IMulticastGroupProvider groupProvider2 = new NatsGroupProvider(proxyFactory, serializer, new NatsGroupOptions() { Url = _natsContainer.GetConnectionString() });
+        using var group2 = groupProvider2.GetOrAddSynchronousGroup<string, ITestReceiver>("MyGroup");
+
+        // Act
+        group.Add(receiverA.Id.ToString(), receiverA.Proxy);
+        group.Add(receiverB.Id.ToString(), receiverB.Proxy);
+        group2.Add(receiverC.Id.ToString(), receiverC.Proxy);
+        group2.Add(receiverD.Id.ToString(), receiverD.Proxy);
+
+        // Wait for subscriptions to be established.
+        await Task.Delay(250);
+
+        // NOTE: NATS guarantees order per publisher, but not across publishers. In this case, each group is a publisher, so we need to call them in order to maintain order.
+        group.Single(receiverA.Id.ToString()).Parameter_One(1234);
+        group.Only([receiverB.Id.ToString()]).Parameter_One(4567);
+        group.Single(receiverC.Id.ToString()).Parameter_One(9876);
+        group.Except([receiverA.Id.ToString(), receiverB.Id.ToString(), receiverC.Id.ToString()]).Parameter_One(1098);
+        group2.Single(receiverA.Id.ToString()).Parameter_One(5678);
+        group2.Only([receiverB.Id.ToString()]).Parameter_One(8910);
+        group2.Single(receiverC.Id.ToString()).Parameter_One(5432);
+        group2.Except([receiverA.Id.ToString(), receiverB.Id.ToString(), receiverC.Id.ToString()]).Parameter_One(7654);
+
+        // We need to wait to receive the message from Redis.
+        await Task.Delay(500);
+
+        // Assert
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5678])], receiverA.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [4567]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [8910])], receiverB.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [9876]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5432])], receiverC.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1098]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [7654])], receiverD.Writer.Written);
     }
 }

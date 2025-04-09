@@ -42,15 +42,12 @@ internal static class KeyArrayFormatter<TKey>
             if (typeof(T) == typeof(Guid))
             {
                 Instance = (IMessagePackFormatter<T>)(object)NativeGuidFormatter.Instance;
-                return;
             }
             else
             {
                 // TODO: Options
                 Instance = (IMessagePackFormatter<T>)(object)(MessagePackSerializerOptions.Standard.Resolver.GetFormatter<T>() ?? throw new NotSupportedException());
             }
-
-            throw new NotSupportedException();
         }
     }
 }

@@ -520,4 +520,92 @@ public class RedisGroupTest
         Assert.Equal([], receiverD.Writer.Written);
         Assert.Equal(1, serializer.SerializeInvocationCallCount);
     }
+
+    [Fact]
+    public async Task Single_Only_Except()
+    {
+        // Arrange
+        var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var serializer = new TestJsonRemoteSerializer();
+        var receiverA = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverB = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverC = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverD = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+
+        IMulticastGroupProvider groupProvider = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
+        using var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
+        IMulticastGroupProvider groupProvider2 = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
+        using var group2 = groupProvider2.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
+
+        // Act
+        group.Add(receiverA.Id, receiverA.Proxy);
+        group.Add(receiverB.Id, receiverB.Proxy);
+        group2.Add(receiverC.Id, receiverC.Proxy);
+        group2.Add(receiverD.Id, receiverD.Proxy);
+
+        group.Single(receiverA.Id).Parameter_One(1234);
+        group2.Single(receiverA.Id).Parameter_One(5678);
+
+        group.Only([receiverB.Id]).Parameter_One(4567);
+        group2.Only([receiverB.Id]).Parameter_One(8910);
+
+        group.Single(receiverC.Id).Parameter_One(9876);
+        group2.Single(receiverC.Id).Parameter_One(5432);
+
+        group.Except([receiverA.Id, receiverB.Id, receiverC.Id]).Parameter_One(1098);
+        group2.Except([receiverA.Id, receiverB.Id, receiverC.Id]).Parameter_One(7654);
+
+        // We need to wait to receive the message from Redis.
+        await Task.Delay(100);
+
+        // Assert
+        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverA.Writer.Written);
+        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[4567]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[8910]}"""], receiverB.Writer.Written);
+        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[9876]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5432]}"""], receiverC.Writer.Written);
+        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1098]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[7654]}"""], receiverD.Writer.Written);
+    }
+
+    [Fact]
+    public async Task KeysAreNotGuid()
+    {
+        // Arrange
+        var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var serializer = new TestJsonRemoteSerializer();
+        var receiverA = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverB = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverC = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverD = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+
+        IMulticastGroupProvider groupProvider = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
+        using var group = groupProvider.GetOrAddSynchronousGroup<string, ITestReceiver>("MyGroup");
+        IMulticastGroupProvider groupProvider2 = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
+        using var group2 = groupProvider2.GetOrAddSynchronousGroup<string, ITestReceiver>("MyGroup");
+
+        // Act
+        group.Add(receiverA.Id.ToString(), receiverA.Proxy);
+        group.Add(receiverB.Id.ToString(), receiverB.Proxy);
+        group2.Add(receiverC.Id.ToString(), receiverC.Proxy);
+        group2.Add(receiverD.Id.ToString(), receiverD.Proxy);
+
+        group.Single(receiverA.Id.ToString()).Parameter_One(1234);
+        group2.Single(receiverA.Id.ToString()).Parameter_One(5678);
+
+        group.Only([receiverB.Id.ToString()]).Parameter_One(4567);
+        group2.Only([receiverB.Id.ToString()]).Parameter_One(8910);
+
+        group.Single(receiverC.Id.ToString()).Parameter_One(9876);
+        group2.Single(receiverC.Id.ToString()).Parameter_One(5432);
+
+        group.Except([receiverA.Id.ToString(), receiverB.Id.ToString(), receiverC.Id.ToString()]).Parameter_One(1098);
+        group2.Except([receiverA.Id.ToString(), receiverB.Id.ToString(), receiverC.Id.ToString()]).Parameter_One(7654);
+
+        // We need to wait to receive the message from Redis.
+        await Task.Delay(100);
+
+        // Assert
+        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverA.Writer.Written);
+        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[4567]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[8910]}"""], receiverB.Writer.Written);
+        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[9876]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5432]}"""], receiverC.Writer.Written);
+        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1098]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[7654]}"""], receiverD.Writer.Written);
+    }
 }
