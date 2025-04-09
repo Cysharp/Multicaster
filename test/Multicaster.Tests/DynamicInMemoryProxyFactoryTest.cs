@@ -53,4 +53,11 @@ public class DynamicInMemoryProxyFactoryTest
             (nameof(ITestInheritedReceiver3.Parameter_Many), (1234, "Hello", true)),
         ], receiverB.Received);
     }
+
+    [Fact]
+    public void DifferentKeyTypes()
+    {
+        DynamicInMemoryProxyFactory.Instance.Create(new ImmutableReceiverHolder<Guid, ITestReceiver>([(Guid.NewGuid(), new TestInMemoryReceiver())]), [], null);
+        DynamicInMemoryProxyFactory.Instance.Create(new ImmutableReceiverHolder<string, ITestReceiver>([(string.Empty, new TestInMemoryReceiver())]), [], null);
+    }
 }

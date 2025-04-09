@@ -33,7 +33,7 @@ public class DynamicInMemoryProxyFactory : IInMemoryProxyFactory
         {
             var typeInMemoryProxyBase = typeof(InMemoryProxyBase<TKey, T>);
             var ctorParameters = new[] { typeof(IReceiverHolder<TKey, T>), typeof(ImmutableArray<TKey>), typeof(ImmutableArray<TKey>?) };
-            var typeBuilder = _moduleBuilder.DefineType($"{typeof(T).FullName!.Replace(".", "_")}_Proxy", TypeAttributes.NotPublic, typeInMemoryProxyBase);
+            var typeBuilder = _moduleBuilder.DefineType($"{typeof(TKey).FullName!.Replace(".", "_")}_{typeof(T).FullName!.Replace(".", "_")}_Proxy", TypeAttributes.NotPublic, typeInMemoryProxyBase);
             typeBuilder.AddInterfaceImplementation(typeof(T));
 
             // _thunk{Method}Delegate fields
