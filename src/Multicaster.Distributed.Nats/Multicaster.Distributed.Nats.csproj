@@ -3,7 +3,11 @@
     <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+    <!-- NuGet -->
     <PackageId>Multicaster.Distributed.Nats</PackageId>
+    <Description>An extension package that adds NATS backend support for Multicaster.</Description>
+
     <AssemblyName>Cysharp.Runtime.$(PackageId)</AssemblyName>
     <RootNamespace>Cysharp.Runtime.Multicast.Distributed.Nats</RootNamespace>
   </PropertyGroup>

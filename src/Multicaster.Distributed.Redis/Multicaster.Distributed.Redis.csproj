@@ -3,7 +3,11 @@
     <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+    <!-- NuGet-->
     <PackageId>Multicaster.Distributed.Redis</PackageId>
+    <Description>An extension package that adds Redis backend support for Multicaster.</Description>
+
     <AssemblyName>Cysharp.Runtime.$(PackageId)</AssemblyName>
     <RootNamespace>Cysharp.Runtime.Multicast.Distributed.Redis</RootNamespace>
   </PropertyGroup>
