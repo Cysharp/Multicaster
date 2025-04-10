@@ -16,6 +16,7 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
     private readonly NatsConnection _connection;
     private readonly IRemoteProxyFactory _proxyFactory;
     private readonly IRemoteSerializer _serializer;
+    private readonly MessagePackSerializerOptions _messagePackSerializerOptionsForKey;
     private readonly string _subject;
     private readonly ConcurrentDictionary<TKey, IRemoteReceiverWriter> _receivers = new();
     private readonly SemaphoreSlim _lock = new(1);
@@ -27,7 +28,7 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
 
     internal string Name { get; }
 
-    public NatsGroup(string name, NatsConnection connection, IRemoteProxyFactory proxyFactory, IRemoteSerializer serializer)
+    public NatsGroup(string name, NatsConnection connection, IRemoteProxyFactory proxyFactory, IRemoteSerializer serializer, MessagePackSerializerOptions messagePackSerializerOptionsForKey)
     {
         Name = name;
         _connection = connection;
@@ -35,7 +36,8 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
         _serializer = serializer;
         _subject = $"Multicaster.Group/{name}";
 
-        All = proxyFactory.Create<T>(new NatsPublishWriter(_connection, _subject, ImmutableArray<TKey>.Empty, null), serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
+        All = proxyFactory.Create<T>(new NatsPublishWriter(_connection, _subject, ImmutableArray<TKey>.Empty, null, messagePackSerializerOptionsForKey), serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
+        _messagePackSerializerOptionsForKey = messagePackSerializerOptionsForKey;
     }
 
     class NatsPublishWriter : IRemoteReceiverWriter
@@ -44,13 +46,15 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
         private readonly string _subject;
         private readonly ImmutableArray<TKey> _excludes;
         private readonly ImmutableArray<TKey>? _targets;
+        private readonly MessagePackSerializerOptions _messagePackSerializerOptionsForKey;
 
-        public NatsPublishWriter(NatsConnection connection, string subject, ImmutableArray<TKey> excludes, ImmutableArray<TKey>? targets)
+        public NatsPublishWriter(NatsConnection connection, string subject, ImmutableArray<TKey> excludes, ImmutableArray<TKey>? targets, MessagePackSerializerOptions messagePackSerializerOptionsForKey)
         {
             _connection = connection;
             _subject = subject;
             _excludes = excludes;
             _targets = targets;
+            _messagePackSerializerOptionsForKey = messagePackSerializerOptionsForKey;
         }
 
         public void Write(ReadOnlyMemory<byte> payload)
@@ -60,14 +64,14 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
 
             // redis-format: [[excludes], [targets], [raw-body]]
             writer.WriteArrayHeader(3);
-            KeyArrayFormatter<TKey>.Serialize(ref writer, _excludes.AsSpan());
+            MessagePackSerializer.Serialize(ref writer, _excludes, _messagePackSerializerOptionsForKey);
             if (_targets is null)
             {
                 writer.WriteNil();
             }
             else
             {
-                KeyArrayFormatter<TKey>.Serialize(ref writer, _targets.Value.AsSpan());
+                MessagePackSerializer.Serialize(ref writer, _targets, _messagePackSerializerOptionsForKey);
             }
             writer.Flush();
             bufferWriter.Write(payload.Span);
@@ -84,19 +88,19 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
     public T Except(IEnumerable<TKey> excludes)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Create<T>(new NatsPublishWriter(_connection, _subject, [..excludes], null), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
+        return _proxyFactory.Create<T>(new NatsPublishWriter(_connection, _subject, [..excludes], null, _messagePackSerializerOptionsForKey), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
     }
 
     public T Only(IEnumerable<TKey> targets)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Create<T>(new NatsPublishWriter(_connection, _subject, ImmutableArray<TKey>.Empty, [..targets]), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
+        return _proxyFactory.Create<T>(new NatsPublishWriter(_connection, _subject, ImmutableArray<TKey>.Empty, [..targets], _messagePackSerializerOptionsForKey), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
     }
 
     public T Single(TKey target)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Create<T>(new NatsPublishWriter(_connection, _subject, ImmutableArray<TKey>.Empty, [target]), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
+        return _proxyFactory.Create<T>(new NatsPublishWriter(_connection, _subject, ImmutableArray<TKey>.Empty, [target], _messagePackSerializerOptionsForKey), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
     }
 
     public void Dispose()
@@ -326,8 +330,8 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
         if (arrayLength == 3)
         {
             // Broadcast
-            var excludes = KeyArrayFormatter<TKey>.Deserialize(ref reader);
-            var targets = KeyArrayFormatter<TKey>.Deserialize(ref reader);
+            var excludes = MessagePackSerializer.Deserialize<TKey[]>(ref reader, _messagePackSerializerOptionsForKey);
+            var targets = MessagePackSerializer.Deserialize<TKey[]>(ref reader, _messagePackSerializerOptionsForKey);
             var payload = messageBytes.AsMemory((int)reader.Consumed);
 
             foreach (var receiver in _receivers)
@@ -341,7 +345,7 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
         {
             // Remove
             var type = reader.ReadByte();
-            var key = MessagePackSerializer.Deserialize<TKey>(ref reader);
+            var key = MessagePackSerializer.Deserialize<TKey>(ref reader, _messagePackSerializerOptionsForKey);
             return AwaitTryRemoveCore(key);
         }
 
@@ -361,7 +365,7 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
         // Format: [0x0, Key]
         writer.WriteArrayHeader(2);
         writer.Write(0x0);
-        MessagePackSerializer.Serialize(ref writer, key);
+        MessagePackSerializer.Serialize(ref writer, key, _messagePackSerializerOptionsForKey);
         writer.Flush();
         return bufferWriter.WrittenMemory.ToArray();
     }

@@ -1,16 +1,13 @@
-﻿using System;
-using System.Buffers;
+﻿using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
-
 using Cysharp.Runtime.Multicast.Internal;
 using Cysharp.Runtime.Multicast.Remoting;
-
 using MessagePack;
+using MessagePack.Formatters;
+using MessagePack.Resolvers;
 
 using StackExchange.Redis;
-
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Cysharp.Runtime.Multicast.Distributed.Redis;
 
@@ -23,6 +20,7 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
     private readonly RedisChannel _channel;
     private readonly ConcurrentDictionary<TKey, IRemoteReceiverWriter> _receivers = new();
     private readonly SemaphoreSlim _lock = new(1);
+    private readonly MessagePackSerializerOptions _messagePackSerializerOptionsForKey;
 
     private ChannelMessageQueue? _messageQueue;
     private bool _disposed;
@@ -31,15 +29,16 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
 
     internal string Name { get; }
 
-    public RedisGroup(string name, ISubscriber subscriber, IRemoteProxyFactory proxyFactory, IRemoteSerializer serializer)
+    public RedisGroup(string name, ISubscriber subscriber, IRemoteProxyFactory proxyFactory, IRemoteSerializer serializer, MessagePackSerializerOptions messagePackSerializerOptions)
     {
         Name = name;
         _subscriber = subscriber;
         _proxyFactory = proxyFactory;
         _serializer = serializer;
         _channel = new RedisChannel($"Multicaster.Group?name={name}", RedisChannel.PatternMode.Literal);
+        _messagePackSerializerOptionsForKey = messagePackSerializerOptions;
 
-        All = proxyFactory.Create<T>(new RedisPublishWriter(_subscriber, _channel, ImmutableArray<TKey>.Empty, null), serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
+        All = proxyFactory.Create<T>(new RedisPublishWriter(_subscriber, _channel, ImmutableArray<TKey>.Empty, null, _messagePackSerializerOptionsForKey), serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
     }
 
     class RedisPublishWriter : IRemoteReceiverWriter
@@ -48,13 +47,15 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
         private readonly RedisChannel _channel;
         private readonly ImmutableArray<TKey> _excludes;
         private readonly ImmutableArray<TKey>? _targets;
+        private readonly MessagePackSerializerOptions _optionsForKey;
 
-        public RedisPublishWriter(ISubscriber subscriber, RedisChannel channel, ImmutableArray<TKey> excludes, ImmutableArray<TKey>? targets)
+        public RedisPublishWriter(ISubscriber subscriber, RedisChannel channel, ImmutableArray<TKey> excludes, ImmutableArray<TKey>? targets, MessagePackSerializerOptions optionsForKey)
         {
             _subscriber = subscriber;
             _channel = channel;
             _excludes = excludes;
             _targets = targets;
+            _optionsForKey = optionsForKey;
         }
 
         public void Write(ReadOnlyMemory<byte> payload)
@@ -64,14 +65,15 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
 
             // Redis-format: [[excludes], [targets], [raw-body]]
             writer.WriteArrayHeader(3);
-            KeyArrayFormatter<TKey>.Serialize(ref writer, _excludes.AsSpan());
+
+            MessagePackSerializer.Serialize(ref writer, _excludes, _optionsForKey);
             if (_targets is null)
             {
                 writer.WriteNil();
             }
             else
             {
-                KeyArrayFormatter<TKey>.Serialize(ref writer,  _targets.Value.AsSpan());
+                MessagePackSerializer.Serialize(ref writer,  _targets.Value, _optionsForKey);
             }
             writer.Flush();
             bufferWriter.Write(payload.Span);
@@ -83,19 +85,19 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
     public T Except(IEnumerable<TKey> excludes)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Create<T>(new RedisPublishWriter(_subscriber, _channel, [..excludes], null), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
+        return _proxyFactory.Create<T>(new RedisPublishWriter(_subscriber, _channel, [..excludes], null, _messagePackSerializerOptionsForKey), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
     }
 
     public T Only(IEnumerable<TKey> targets)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Create<T>(new RedisPublishWriter(_subscriber, _channel, ImmutableArray<TKey>.Empty, [..targets]), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
+        return _proxyFactory.Create<T>(new RedisPublishWriter(_subscriber, _channel, ImmutableArray<TKey>.Empty, [..targets], _messagePackSerializerOptionsForKey), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
     }
 
     public T Single(TKey target)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Create<T>(new RedisPublishWriter(_subscriber, _channel, ImmutableArray<TKey>.Empty, [target]), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
+        return _proxyFactory.Create<T>(new RedisPublishWriter(_subscriber, _channel, ImmutableArray<TKey>.Empty, [target], _messagePackSerializerOptionsForKey), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
     }
 
     public void Dispose()
@@ -124,8 +126,8 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
         if (arrayLength == 3)
         {
             // Broadcast
-            var excludes = KeyArrayFormatter<TKey>.Deserialize(ref reader);
-            var targets = KeyArrayFormatter<TKey>.Deserialize(ref reader);
+            var excludes = MessagePackSerializer.Deserialize<TKey[]>(ref reader, _messagePackSerializerOptionsForKey);
+            var targets = MessagePackSerializer.Deserialize<TKey[]>(ref reader, _messagePackSerializerOptionsForKey);
             var payload = messageBytes.AsMemory((int)reader.Consumed);
 
             foreach (var receiver in _receivers)
@@ -139,7 +141,7 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
         {
             // Remove
             var type = reader.ReadByte();
-            var key = MessagePackSerializer.Deserialize<TKey>(ref reader);
+            var key = MessagePackSerializer.Deserialize<TKey>(ref reader, _messagePackSerializerOptionsForKey);
             if (isSynchronous)
             {
                 TryRemoveCore(key);
@@ -167,7 +169,7 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
         // Format: [0x0, Key]
         writer.WriteArrayHeader(2);
         writer.Write(0x0);
-        MessagePackSerializer.Serialize(ref writer, key);
+        MessagePackSerializer.Serialize(ref writer, key, _messagePackSerializerOptionsForKey);
         writer.Flush();
         return bufferWriter.WrittenMemory.ToArray();
     }
