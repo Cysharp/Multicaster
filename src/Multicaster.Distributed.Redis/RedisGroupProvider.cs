@@ -1,5 +1,10 @@
 ﻿using System.Collections.Concurrent;
 using Cysharp.Runtime.Multicast.Remoting;
+
+using MessagePack;
+using MessagePack.Formatters;
+using MessagePack.Resolvers;
+
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 
@@ -13,6 +18,7 @@ public class RedisGroupProvider : IMulticastGroupProvider, IDisposable
     private readonly ConnectionMultiplexer? _createdConnectionMultiplexer;
     private readonly ISubscriber _subscriber;
     private readonly string? _prefix;
+    private readonly MessagePackSerializerOptions _messagePackSerializerOptionsForKey;
 
     public RedisGroupProvider(IRemoteProxyFactory proxyFactory, IRemoteSerializer serializer, IOptions<RedisGroupOptions> options)
         : this(proxyFactory, serializer, options.Value)
@@ -33,15 +39,20 @@ public class RedisGroupProvider : IMulticastGroupProvider, IDisposable
             _subscriber = options.ConnectionMultiplexer.GetSubscriber();
         }
         _prefix = options.Prefix;
+
+        var messagePackSerializerOptions = (options.MessagePackSerializerOptionsForKey ?? MessagePackSerializer.DefaultOptions);
+        _messagePackSerializerOptionsForKey = messagePackSerializerOptions.WithResolver(
+            CompositeResolver.Create([NativeGuidFormatter.Instance], [messagePackSerializerOptions.Resolver])
+        );
     }
 
     public IMulticastAsyncGroup<TKey, TReceiver> GetOrAddGroup<TKey, TReceiver>(string name)
         where TKey : IEquatable<TKey>
-        => (IMulticastAsyncGroup<TKey, TReceiver>)_groups.GetOrAdd((name, typeof(TKey), typeof(TReceiver)), _ => new RedisGroup<TKey, TReceiver>(_prefix + name, _subscriber, _proxyFactory, _serializer));
+        => (IMulticastAsyncGroup<TKey, TReceiver>)_groups.GetOrAdd((name, typeof(TKey), typeof(TReceiver)), _ => new RedisGroup<TKey, TReceiver>(_prefix + name, _subscriber, _proxyFactory, _serializer, _messagePackSerializerOptionsForKey));
 
     public IMulticastSyncGroup<TKey, TReceiver> GetOrAddSynchronousGroup<TKey, TReceiver>(string name)
         where TKey : IEquatable<TKey>
-        => (IMulticastSyncGroup<TKey, TReceiver>)_groups.GetOrAdd((name, typeof(TKey), typeof(TReceiver)), _ => new RedisGroup<TKey, TReceiver>(_prefix + name, _subscriber, _proxyFactory, _serializer));
+        => (IMulticastSyncGroup<TKey, TReceiver>)_groups.GetOrAdd((name, typeof(TKey), typeof(TReceiver)), _ => new RedisGroup<TKey, TReceiver>(_prefix + name, _subscriber, _proxyFactory, _serializer, _messagePackSerializerOptionsForKey));
 
     public void Dispose()
     {
@@ -51,7 +62,23 @@ public class RedisGroupProvider : IMulticastGroupProvider, IDisposable
 
 public class RedisGroupOptions
 {
+    /// <summary>
+    /// Gets or sets the connection string to connect to Redis. If <see cref="ConnectionMultiplexer"/> property is not set, this will be used.
+    /// </summary>
     public string ConnectionString { get; set; } = "localhost:6379";
+
+    /// <summary>
+    /// Gets or sets a ConnectionMultiplexer instance to connect to Redis. If this is set, <see cref="ConnectionString"/> property will be ignored.
+    /// </summary>
     public ConnectionMultiplexer? ConnectionMultiplexer { get; set; }
+
+    /// <summary>
+    /// Gets or sets a prefix for the Redis key.
+    /// </summary>
     public string? Prefix { get; set; }
+
+    /// <summary>
+    /// Gets or sets a MessagePackSerializerOptions used for serializing the key.
+    /// </summary>
+    public MessagePackSerializerOptions? MessagePackSerializerOptionsForKey { get; set; }
 }

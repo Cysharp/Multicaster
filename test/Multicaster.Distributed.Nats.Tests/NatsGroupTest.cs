@@ -596,6 +596,7 @@ public class NatsGroupTest
         group.Only([receiverB.Id]).Parameter_One(4567);
         group.Single(receiverC.Id).Parameter_One(9876);
         group.Except([receiverA.Id, receiverB.Id, receiverC.Id]).Parameter_One(1098);
+        await Task.Delay(250);
         group2.Single(receiverA.Id).Parameter_One(5678);
         group2.Only([receiverB.Id]).Parameter_One(8910);
         group2.Single(receiverC.Id).Parameter_One(5432);
@@ -645,6 +646,7 @@ public class NatsGroupTest
         group.Only([receiverB.Id.ToString()]).Parameter_One(4567);
         group.Single(receiverC.Id.ToString()).Parameter_One(9876);
         group.Except([receiverA.Id.ToString(), receiverB.Id.ToString(), receiverC.Id.ToString()]).Parameter_One(1098);
+        await Task.Delay(250);
         group2.Single(receiverA.Id.ToString()).Parameter_One(5678);
         group2.Only([receiverB.Id.ToString()]).Parameter_One(8910);
         group2.Single(receiverC.Id.ToString()).Parameter_One(5432);
