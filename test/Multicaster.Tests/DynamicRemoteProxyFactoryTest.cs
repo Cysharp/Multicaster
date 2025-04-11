@@ -13,10 +13,9 @@ public class DynamicRemoteProxyFactoryTest
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
-        var pendingTasks = new RemoteClientResultPendingTaskRegistry();
 
         var receiverWriterA = new TestRemoteReceiverWriter();
-        var proxy = proxyFactory.CreateDirect<ITestReceiver>(receiverWriterA, serializer, pendingTasks);
+        var proxy = proxyFactory.CreateDirect<ITestReceiver>(receiverWriterA, serializer);
 
         // Act
         proxy.Parameter_Many(1234, "Hello", true, 1234567890L);
@@ -40,7 +39,7 @@ public class DynamicRemoteProxyFactoryTest
         receivers.TryAdd(Guid.NewGuid(), receiverWriterA);
         receivers.TryAdd(Guid.NewGuid(), receiverWriterB);
 
-        var proxy = proxyFactory.Create<Guid, ITestReceiver>(receivers, serializer, pendingTasks);
+        var proxy = proxyFactory.Create<Guid, ITestReceiver>(receivers, serializer);
 
         // Act
         proxy.Parameter_Zero();
@@ -57,7 +56,6 @@ public class DynamicRemoteProxyFactoryTest
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
-        var pendingTasks = new RemoteClientResultPendingTaskRegistry();
 
         var receiverWriterA = new TestRemoteReceiverWriter();
         var receiverWriterB = new TestRemoteReceiverWriter();
@@ -65,7 +63,7 @@ public class DynamicRemoteProxyFactoryTest
         receivers.TryAdd(Guid.NewGuid(), receiverWriterA);
         receivers.TryAdd(Guid.NewGuid(), receiverWriterB);
 
-        var proxy = proxyFactory.Create<Guid, ITestReceiver>(receivers, serializer, pendingTasks);
+        var proxy = proxyFactory.Create<Guid, ITestReceiver>(receivers, serializer);
 
         // Act
         proxy.Parameter_One(1234);
@@ -82,7 +80,6 @@ public class DynamicRemoteProxyFactoryTest
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
-        var pendingTasks = new RemoteClientResultPendingTaskRegistry();
 
         var receiverWriterA = new TestRemoteReceiverWriter();
         var receiverWriterB = new TestRemoteReceiverWriter();
@@ -90,7 +87,7 @@ public class DynamicRemoteProxyFactoryTest
         receivers.TryAdd(Guid.NewGuid(), receiverWriterA);
         receivers.TryAdd(Guid.NewGuid(), receiverWriterB);
 
-        var proxy = proxyFactory.Create<Guid, ITestReceiver>(receivers, serializer, pendingTasks);
+        var proxy = proxyFactory.Create<Guid, ITestReceiver>(receivers, serializer);
 
         // Act
         proxy.Parameter_Many(1234, "Hello", true, 1234567890L);
@@ -107,10 +104,9 @@ public class DynamicRemoteProxyFactoryTest
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
-        var pendingTasks = new RemoteClientResultPendingTaskRegistry();
 
         var receiverWriterA = new TestRemoteReceiverWriter();
-        var proxy = proxyFactory.CreateDirect<ITestReceiver>(receiverWriterA, serializer, pendingTasks);
+        var proxy = proxyFactory.CreateDirect<ITestReceiver>(receiverWriterA, serializer);
 
         // Act & Assert
         var task = proxy.ClientResult_Parameter_Zero_NoReturnValue();
@@ -121,8 +117,8 @@ public class DynamicRemoteProxyFactoryTest
         Assert.NotNull(serialized.MessageId);
         Assert.Equal([], serialized.Arguments);
 
-        Assert.Equal(1, pendingTasks.Count);
-        Assert.True(pendingTasks.TryGetAndUnregisterPendingTask(serialized.MessageId.Value, out var pendingTask));
+        Assert.Equal(1, receiverWriterA.PendingTasks.Count);
+        Assert.True(receiverWriterA.PendingTasks.TryGetAndUnregisterPendingTask(serialized.MessageId.Value, out var pendingTask));
         Assert.False(task.IsCompleted);
         pendingTask.TrySetResult("[]"u8.ToArray());
         await Task.Delay(100);
@@ -137,10 +133,9 @@ public class DynamicRemoteProxyFactoryTest
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
-        var pendingTasks = new RemoteClientResultPendingTaskRegistry();
 
         var receiverWriterA = new TestRemoteReceiverWriter();
-        var proxy = proxyFactory.CreateDirect<ITestReceiver>(receiverWriterA, serializer, pendingTasks);
+        var proxy = proxyFactory.CreateDirect<ITestReceiver>(receiverWriterA, serializer);
 
         // Act & Assert
         var task = proxy.ClientResult_Parameter_Many_NoReturnValue(1234, "Hello", true, 1234567890L);
@@ -154,8 +149,8 @@ public class DynamicRemoteProxyFactoryTest
         Assert.True(((JsonElement)serialized.Arguments[2]!).GetBoolean());
         Assert.Equal(1234567890L, ((JsonElement)serialized.Arguments[3]!).GetInt64());
 
-        Assert.Equal(1, pendingTasks.Count);
-        Assert.True(pendingTasks.TryGetAndUnregisterPendingTask(serialized.MessageId.Value, out var pendingTask));
+        Assert.Equal(1, receiverWriterA.PendingTasks.Count);
+        Assert.True(receiverWriterA.PendingTasks.TryGetAndUnregisterPendingTask(serialized.MessageId.Value, out var pendingTask));
         Assert.False(task.IsCompleted);
         pendingTask.TrySetResult("[]"u8.ToArray());
         await Task.Delay(100);
@@ -170,10 +165,9 @@ public class DynamicRemoteProxyFactoryTest
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
-        var pendingTasks = new RemoteClientResultPendingTaskRegistry();
 
         var receiverWriterA = new TestRemoteReceiverWriter();
-        var proxy = proxyFactory.CreateDirect<ITestReceiver>(receiverWriterA, serializer, pendingTasks);
+        var proxy = proxyFactory.CreateDirect<ITestReceiver>(receiverWriterA, serializer);
 
         // Act & Assert
         var task = proxy.ClientResult_Parameter_Zero();
@@ -184,8 +178,8 @@ public class DynamicRemoteProxyFactoryTest
         Assert.NotNull(serialized.MessageId);
         Assert.Equal([], serialized.Arguments);
 
-        Assert.Equal(1, pendingTasks.Count);
-        Assert.True(pendingTasks.TryGetAndUnregisterPendingTask(serialized.MessageId.Value, out var pendingTask));
+        Assert.Equal(1, receiverWriterA.PendingTasks.Count);
+        Assert.True(receiverWriterA.PendingTasks.TryGetAndUnregisterPendingTask(serialized.MessageId.Value, out var pendingTask));
         Assert.False(task.IsCompleted);
         pendingTask.TrySetResult("\"Hello!\""u8.ToArray());
         var result = await task.WaitAsync(TimeSpan.FromSeconds(1));
@@ -201,10 +195,9 @@ public class DynamicRemoteProxyFactoryTest
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
-        var pendingTasks = new RemoteClientResultPendingTaskRegistry();
 
         var receiverWriterA = new TestRemoteReceiverWriter();
-        var proxy = proxyFactory.CreateDirect<ITestReceiver>(receiverWriterA, serializer, pendingTasks);
+        var proxy = proxyFactory.CreateDirect<ITestReceiver>(receiverWriterA, serializer);
 
         // Act & Assert
         var task = proxy.ClientResult_Parameter_Many(1234, "Hello", true, 1234567890L);
@@ -218,8 +211,8 @@ public class DynamicRemoteProxyFactoryTest
         Assert.True(((JsonElement)serialized.Arguments[2]!).GetBoolean());
         Assert.Equal(1234567890L, ((JsonElement)serialized.Arguments[3]!).GetInt64());
 
-        Assert.Equal(1, pendingTasks.Count);
-        Assert.True(pendingTasks.TryGetAndUnregisterPendingTask(serialized.MessageId.Value, out var pendingTask));
+        Assert.Equal(1, receiverWriterA.PendingTasks.Count);
+        Assert.True(receiverWriterA.PendingTasks.TryGetAndUnregisterPendingTask(serialized.MessageId.Value, out var pendingTask));
         Assert.False(task.IsCompleted);
         pendingTask.TrySetResult("\"Hello!\""u8.ToArray());
         var result = await task.WaitAsync(TimeSpan.FromSeconds(1));
@@ -235,7 +228,6 @@ public class DynamicRemoteProxyFactoryTest
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
-        var pendingTasks = new RemoteClientResultPendingTaskRegistry();
 
         var receiverWriterA = new TestRemoteReceiverWriter();
         var receiverWriterB = new TestRemoteReceiverWriter();
@@ -244,7 +236,7 @@ public class DynamicRemoteProxyFactoryTest
         receivers.TryAdd(Guid.NewGuid(), receiverWriterB);
 
         // Act
-        var proxy = proxyFactory.Create<Guid, ITestInheritedReceiver3>(receivers, serializer, pendingTasks);
+        var proxy = proxyFactory.Create<Guid, ITestInheritedReceiver3>(receivers, serializer);
     }
 
     [Fact]
@@ -253,7 +245,6 @@ public class DynamicRemoteProxyFactoryTest
         // Arrange
         var proxyFactory = DynamicRemoteProxyFactory.Instance;
         var serializer = new TestJsonRemoteSerializer();
-        var pendingTasks = new RemoteClientResultPendingTaskRegistry();
 
         var receiverWriterA = new TestRemoteReceiverWriter();
         var receiverWriterB = new TestRemoteReceiverWriter();
@@ -261,7 +252,7 @@ public class DynamicRemoteProxyFactoryTest
         receivers.TryAdd(Guid.NewGuid(), receiverWriterA);
         receivers.TryAdd(Guid.NewGuid(), receiverWriterB);
 
-        var proxy = proxyFactory.Create<Guid, ITestInheritedReceiver3>(receivers, serializer, pendingTasks);
+        var proxy = proxyFactory.Create<Guid, ITestInheritedReceiver3>(receivers, serializer);
 
         // Act
         proxy.Parameter_Zero();

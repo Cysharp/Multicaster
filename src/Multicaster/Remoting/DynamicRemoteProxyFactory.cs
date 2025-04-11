@@ -17,28 +17,27 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
         _moduleBuilder = _assemblyBuilder.DefineDynamicModule("Multicaster");
     }
 
-    public T Create<T>(IRemoteReceiverWriter writer, IRemoteSerializer serializer, IRemoteClientResultPendingTaskRegistry pendingTasks)
+    public T Create<T>(IRemoteReceiverWriter writer, IRemoteSerializer serializer)
     {
-        return Core<T>.Create(writer, serializer, pendingTasks);
+        return Core<T>.Create(writer, serializer);
     }
 
     static class Core<T>
     {
         private static readonly Type _type;
-        private static readonly Func<IRemoteReceiverWriter, IRemoteSerializer, IRemoteClientResultPendingTaskRegistry, T> _factory;
+        private static readonly Func<IRemoteReceiverWriter, IRemoteSerializer, T> _factory;
 
         static Core()
         {
             var typeBuilder = _moduleBuilder.DefineType($"{typeof(T).FullName!.Replace(".", "_")}_Proxy", TypeAttributes.Class, typeof(RemoteProxyBase));
             typeBuilder.AddInterfaceImplementation(typeof(T));
-            var ctorBase = typeof(RemoteProxyBase).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, [typeof(IRemoteReceiverWriter), typeof(IRemoteSerializer), typeof(IRemoteClientResultPendingTaskRegistry)])!;
-            var ctor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, [typeof(IRemoteReceiverWriter), typeof(IRemoteSerializer), typeof(IRemoteClientResultPendingTaskRegistry)]);
+            var ctorBase = typeof(RemoteProxyBase).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, [typeof(IRemoteReceiverWriter), typeof(IRemoteSerializer)])!;
+            var ctor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, [typeof(IRemoteReceiverWriter), typeof(IRemoteSerializer)]);
             {
                 var il = ctor.GetILGenerator();
                 il.Emit(OpCodes.Ldarg_0);
                 il.Emit(OpCodes.Ldarg_1);
                 il.Emit(OpCodes.Ldarg_2);
-                il.Emit(OpCodes.Ldarg_3);
                 il.Emit(OpCodes.Call, ctorBase);
                 il.Emit(OpCodes.Ret);
             }
@@ -115,13 +114,12 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
                     "CreateInstance",
                     MethodAttributes.Private | MethodAttributes.Static,
                     typeof(T),
-                    [typeof(IRemoteReceiverWriter), typeof(IRemoteSerializer), typeof(IRemoteClientResultPendingTaskRegistry)]
+                    [typeof(IRemoteReceiverWriter), typeof(IRemoteSerializer)]
                 );
                 {
                     var il = methodBuilder.GetILGenerator();
                     il.Emit(OpCodes.Ldarg_0); // writer
                     il.Emit(OpCodes.Ldarg_1); // serializer
-                    il.Emit(OpCodes.Ldarg_2); // pendingTasks
                     il.Emit(OpCodes.Newobj, ctor);
                     il.Emit(OpCodes.Ret);
                 }
@@ -129,11 +127,11 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
             _type = typeBuilder.CreateType()!;
 
             _factory = _type.GetMethod("CreateInstance", BindingFlags.Static | BindingFlags.NonPublic)!
-                .CreateDelegate<Func<IRemoteReceiverWriter, IRemoteSerializer, IRemoteClientResultPendingTaskRegistry, T>>();
+                .CreateDelegate<Func<IRemoteReceiverWriter, IRemoteSerializer, T>>();
         }
 
-        public static T Create(IRemoteReceiverWriter writer, IRemoteSerializer serializer, IRemoteClientResultPendingTaskRegistry pendingTasks)
-            => _factory(writer, serializer, pendingTasks);
+        public static T Create(IRemoteReceiverWriter writer, IRemoteSerializer serializer)
+            => _factory(writer, serializer);
     }
 
     static class MethodInvokeHelper

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace Cysharp.Runtime.Multicast.InMemory;
@@ -259,6 +260,10 @@ public abstract class InMemoryProxyBase<TKey, T>
             }
         }
     }
+
+    [DoesNotReturn]
+    private TResult ThrowNoInvocableTarget<TResult>() => throw new InvalidOperationException("No invocable target found.");
+
     protected TResult InvokeWithResult<TResult>(Func<T, TResult> invoker)
     {
         ThrowIfNotSingle();
@@ -275,8 +280,10 @@ public abstract class InMemoryProxyBase<TKey, T>
                 // Ignore
             }
         }
-        throw new InvalidOperationException();
+
+        return ThrowNoInvocableTarget<TResult>();
     }
+
     protected TResult InvokeWithResult<T1, TResult>(T1 arg1, Func<T, T1, TResult> invoker)
     {
         ThrowIfNotSingle();
@@ -293,7 +300,7 @@ public abstract class InMemoryProxyBase<TKey, T>
                 // Ignore
             }
         }
-        throw new InvalidOperationException();
+        return ThrowNoInvocableTarget<TResult>();
     }
     protected TResult InvokeWithResult<T1, T2, TResult>(T1 arg1, T2 arg2, Func<T, T1, T2, TResult> invoker)
     {
@@ -311,7 +318,7 @@ public abstract class InMemoryProxyBase<TKey, T>
                 // Ignore
             }
         }
-        throw new InvalidOperationException();
+        return ThrowNoInvocableTarget<TResult>();
     }
     protected TResult InvokeWithResult<T1, T2, T3, TResult>(T1 arg1, T2 arg2, T3 arg3, Func<T, T1, T2, T3, TResult> invoker)
     {
@@ -329,7 +336,7 @@ public abstract class InMemoryProxyBase<TKey, T>
                 // Ignore
             }
         }
-        throw new InvalidOperationException();
+        return ThrowNoInvocableTarget<TResult>();
     }
     protected TResult InvokeWithResult<T1, T2, T3, T4, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, Func<T, T1, T2, T3, T4, TResult> invoker)
     {
@@ -347,7 +354,7 @@ public abstract class InMemoryProxyBase<TKey, T>
                 // Ignore
             }
         }
-        throw new InvalidOperationException();
+        return ThrowNoInvocableTarget<TResult>();
     }
     protected TResult InvokeWithResult<T1, T2, T3, T4, T5, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, Func<T, T1, T2, T3, T4, T5, TResult> invoker)
     {
@@ -365,7 +372,7 @@ public abstract class InMemoryProxyBase<TKey, T>
                 // Ignore
             }
         }
-        throw new InvalidOperationException();
+        return ThrowNoInvocableTarget<TResult>();
     }
     protected TResult InvokeWithResult<T1, T2, T3, T4, T5, T6, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, Func<T, T1, T2, T3, T4, T5, T6, TResult> invoker)
     {
@@ -383,7 +390,7 @@ public abstract class InMemoryProxyBase<TKey, T>
                 // Ignore
             }
         }
-        throw new InvalidOperationException();
+        return ThrowNoInvocableTarget<TResult>();
     }
     protected TResult InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, Func<T, T1, T2, T3, T4, T5, T6, T7, TResult> invoker)
     {
@@ -401,7 +408,7 @@ public abstract class InMemoryProxyBase<TKey, T>
                 // Ignore
             }
         }
-        throw new InvalidOperationException();
+        return ThrowNoInvocableTarget<TResult>();
     }
     protected TResult InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, Func<T, T1, T2, T3, T4, T5, T6, T7, T8, TResult> invoker)
     {
@@ -419,7 +426,7 @@ public abstract class InMemoryProxyBase<TKey, T>
                 // Ignore
             }
         }
-        throw new InvalidOperationException();
+        return ThrowNoInvocableTarget<TResult>();
     }
     protected TResult InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, Func<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult> invoker)
     {
@@ -437,7 +444,7 @@ public abstract class InMemoryProxyBase<TKey, T>
                 // Ignore
             }
         }
-        throw new InvalidOperationException();
+        return ThrowNoInvocableTarget<TResult>();
     }
     protected TResult InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, Func<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult> invoker)
     {
@@ -455,7 +462,7 @@ public abstract class InMemoryProxyBase<TKey, T>
                 // Ignore
             }
         }
-        throw new InvalidOperationException();
+        return ThrowNoInvocableTarget<TResult>();
     }
     protected TResult InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, Func<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TResult> invoker)
     {
@@ -473,7 +480,7 @@ public abstract class InMemoryProxyBase<TKey, T>
                 // Ignore
             }
         }
-        throw new InvalidOperationException();
+        return ThrowNoInvocableTarget<TResult>();
     }
     protected TResult InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, Func<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TResult> invoker)
     {
@@ -491,7 +498,7 @@ public abstract class InMemoryProxyBase<TKey, T>
                 // Ignore
             }
         }
-        throw new InvalidOperationException();
+        return ThrowNoInvocableTarget<TResult>();
     }
     protected TResult InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, Func<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, TResult> invoker)
     {
@@ -509,7 +516,7 @@ public abstract class InMemoryProxyBase<TKey, T>
                 // Ignore
             }
         }
-        throw new InvalidOperationException();
+        return ThrowNoInvocableTarget<TResult>();
     }
     protected TResult InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, Func<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TResult> invoker)
     {
@@ -527,7 +534,7 @@ public abstract class InMemoryProxyBase<TKey, T>
                 // Ignore
             }
         }
-        throw new InvalidOperationException();
+        return ThrowNoInvocableTarget<TResult>();
     }
     protected TResult InvokeWithResult<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15, Func<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, TResult> invoker)
     {
@@ -545,7 +552,7 @@ public abstract class InMemoryProxyBase<TKey, T>
                 // Ignore
             }
         }
-        throw new InvalidOperationException();
+        return ThrowNoInvocableTarget<TResult>();
     }
 
     private void ThrowIfNotSingle()

@@ -11,7 +11,6 @@ internal class RemoteGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastS
     private readonly ConcurrentDictionary<TKey, IRemoteReceiverWriter> _receivers = new();
     private readonly IRemoteProxyFactory _proxyFactory;
     private readonly IRemoteSerializer _serializer;
-    private readonly IRemoteClientResultPendingTaskRegistry _pendingTasks;
     private readonly Action<RemoteGroup<TKey, T>> _disposeAction;
     private bool _disposed;
 
@@ -19,15 +18,14 @@ internal class RemoteGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastS
 
     internal string Name { get; }
 
-    public RemoteGroup(string name, IRemoteProxyFactory proxyFactory, IRemoteSerializer serializer, IRemoteClientResultPendingTaskRegistry pendingTasks, Action<RemoteGroup<TKey, T>> disposeAction)
+    public RemoteGroup(string name, IRemoteProxyFactory proxyFactory, IRemoteSerializer serializer, Action<RemoteGroup<TKey, T>> disposeAction)
     {
         Name = name;
         _proxyFactory = proxyFactory;
         _serializer = serializer;
-        _pendingTasks = pendingTasks;
         _disposeAction = disposeAction;
 
-        All = _proxyFactory.Create<TKey, T>(_receivers, _serializer, _pendingTasks);
+        All = _proxyFactory.Create<TKey, T>(_receivers, _serializer);
     }
 
     public ValueTask AddAsync(TKey key, T receiver, CancellationToken cancellationToken = default)
@@ -75,19 +73,19 @@ internal class RemoteGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastS
     public T Except(IEnumerable<TKey> excludes)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Except<TKey, T>(_receivers, [..excludes], _serializer, _pendingTasks);
+        return _proxyFactory.Except<TKey, T>(_receivers, [..excludes], _serializer);
     }
 
     public T Only(IEnumerable<TKey> targets)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Only<TKey, T>(_receivers, [..targets], _serializer, _pendingTasks);
+        return _proxyFactory.Only<TKey, T>(_receivers, [..targets], _serializer);
     }
 
     public T Single(TKey target)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Single<TKey, T>(_receivers, target, _serializer, _pendingTasks);
+        return _proxyFactory.Single<TKey, T>(_receivers, target, _serializer);
     }
 
     public void Dispose()

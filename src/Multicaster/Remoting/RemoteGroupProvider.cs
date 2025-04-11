@@ -10,23 +10,21 @@ public class RemoteGroupProvider : IMulticastGroupProvider
     private readonly IInMemoryProxyFactory _proxyFactory;
     private readonly IRemoteProxyFactory _remoteProxyFactory;
     private readonly IRemoteSerializer _remoteSerializer;
-    private readonly IRemoteClientResultPendingTaskRegistry _pendingTasks;
 
-    public RemoteGroupProvider(IInMemoryProxyFactory proxyFactory, IRemoteProxyFactory remoteProxyFactory, IRemoteSerializer remoteSerializer, IRemoteClientResultPendingTaskRegistry pendingTasks)
+    public RemoteGroupProvider(IInMemoryProxyFactory proxyFactory, IRemoteProxyFactory remoteProxyFactory, IRemoteSerializer remoteSerializer)
     {
         _proxyFactory = proxyFactory;
         _remoteProxyFactory = remoteProxyFactory;
         _remoteSerializer = remoteSerializer;
-        _pendingTasks = pendingTasks;
     }
 
     public IMulticastAsyncGroup<TKey, T> GetOrAddGroup<TKey, T>(string name)
         where TKey : IEquatable<TKey>
-        => (IMulticastAsyncGroup<TKey, T>)_groups.GetOrAdd((typeof(TKey), typeof(T), name), _ => new RemoteCompositeGroup<TKey, T>(name, _proxyFactory, _remoteProxyFactory, _remoteSerializer, _pendingTasks, Remove));
+        => (IMulticastAsyncGroup<TKey, T>)_groups.GetOrAdd((typeof(TKey), typeof(T), name), _ => new RemoteCompositeGroup<TKey, T>(name, _proxyFactory, _remoteProxyFactory, _remoteSerializer, Remove));
 
     public IMulticastSyncGroup<TKey, T> GetOrAddSynchronousGroup<TKey, T>(string name)
         where TKey : IEquatable<TKey>
-        => (IMulticastSyncGroup<TKey, T>)_groups.GetOrAdd((typeof(TKey), typeof(T), name), _ => new RemoteCompositeGroup<TKey, T>(name, _proxyFactory, _remoteProxyFactory, _remoteSerializer, _pendingTasks, Remove));
+        => (IMulticastSyncGroup<TKey, T>)_groups.GetOrAdd((typeof(TKey), typeof(T), name), _ => new RemoteCompositeGroup<TKey, T>(name, _proxyFactory, _remoteProxyFactory, _remoteSerializer, Remove));
 
     private void Remove<TKey, T>(RemoteCompositeGroup<TKey, T> group)
         where TKey : IEquatable<TKey>
@@ -51,7 +49,6 @@ internal class RemoteCompositeGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IM
         IInMemoryProxyFactory memoryProxyFactory,
         IRemoteProxyFactory remoteProxyFactory,
         IRemoteSerializer remoteSerializer,
-        IRemoteClientResultPendingTaskRegistry pendingTasks,
         Action<RemoteCompositeGroup<TKey, T>> disposeAction
     )
     {
@@ -60,7 +57,7 @@ internal class RemoteCompositeGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IM
         _disposeAction = disposeAction;
 
         _memoryGroup = new InMemoryGroup<TKey, T>(name, memoryProxyFactory, static _ => { });
-        _remoteGroup = new RemoteGroup<TKey, T>(name, remoteProxyFactory, remoteSerializer, pendingTasks, static _ => { });
+        _remoteGroup = new RemoteGroup<TKey, T>(name, remoteProxyFactory, remoteSerializer, static _ => { });
         All = memoryProxyFactory.Create<TKey, T>(ReceiverHolder.CreateImmutable<TKey, T>(_memoryGroup.All, _remoteGroup.All));
     }
 

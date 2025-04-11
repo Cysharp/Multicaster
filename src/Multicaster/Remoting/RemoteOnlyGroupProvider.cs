@@ -18,11 +18,11 @@ public class RemoteOnlyGroupProvider : IMulticastGroupProvider
 
     public IMulticastAsyncGroup<TKey, T> GetOrAddGroup<TKey, T>(string name)
         where TKey : IEquatable<TKey>
-        => (IMulticastAsyncGroup<TKey, T>)_groups.GetOrAdd((typeof(T), name), _ => new RemoteGroup<TKey, T>(name, _proxyFactory, _serializer, _pendingTasks, Remove));
+        => (IMulticastAsyncGroup<TKey, T>)_groups.GetOrAdd((typeof(T), name), _ => new RemoteGroup<TKey, T>(name, _proxyFactory, _serializer, Remove));
 
     public IMulticastSyncGroup<TKey, T> GetOrAddSynchronousGroup<TKey, T>(string name)
         where TKey : IEquatable<TKey>
-        => (IMulticastSyncGroup<TKey, T>)_groups.GetOrAdd((typeof(T), name), _ => new RemoteGroup<TKey, T>(name, _proxyFactory, _serializer, _pendingTasks, Remove));
+        => (IMulticastSyncGroup<TKey, T>)_groups.GetOrAdd((typeof(T), name), _ => new RemoteGroup<TKey, T>(name, _proxyFactory, _serializer, Remove));
 
     private void Remove<TKey, T>(RemoteGroup<TKey, T> group)
         where TKey : IEquatable<TKey>

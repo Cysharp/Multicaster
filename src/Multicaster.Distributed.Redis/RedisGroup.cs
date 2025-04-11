@@ -38,7 +38,7 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
         _channel = new RedisChannel($"Multicaster.Group?name={name}", RedisChannel.PatternMode.Literal);
         _messagePackSerializerOptionsForKey = messagePackSerializerOptions;
 
-        All = proxyFactory.Create<T>(new RedisPublishWriter(_subscriber, _channel, ImmutableArray<TKey>.Empty, null, _messagePackSerializerOptionsForKey), serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
+        All = proxyFactory.Create<T>(new RedisPublishWriter(_subscriber, _channel, ImmutableArray<TKey>.Empty, null, _messagePackSerializerOptionsForKey), serializer);
     }
 
     class RedisPublishWriter : IRemoteReceiverWriter
@@ -48,6 +48,8 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
         private readonly ImmutableArray<TKey> _excludes;
         private readonly ImmutableArray<TKey>? _targets;
         private readonly MessagePackSerializerOptions _optionsForKey;
+
+        public IRemoteClientResultPendingTaskRegistry PendingTasks => NotSupportedRemoteClientResultPendingTaskRegistry.Instance;
 
         public RedisPublishWriter(ISubscriber subscriber, RedisChannel channel, ImmutableArray<TKey> excludes, ImmutableArray<TKey>? targets, MessagePackSerializerOptions optionsForKey)
         {
@@ -85,19 +87,19 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
     public T Except(IEnumerable<TKey> excludes)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Create<T>(new RedisPublishWriter(_subscriber, _channel, [..excludes], null, _messagePackSerializerOptionsForKey), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
+        return _proxyFactory.Create<T>(new RedisPublishWriter(_subscriber, _channel, [..excludes], null, _messagePackSerializerOptionsForKey), _serializer);
     }
 
     public T Only(IEnumerable<TKey> targets)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Create<T>(new RedisPublishWriter(_subscriber, _channel, ImmutableArray<TKey>.Empty, [..targets], _messagePackSerializerOptionsForKey), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
+        return _proxyFactory.Create<T>(new RedisPublishWriter(_subscriber, _channel, ImmutableArray<TKey>.Empty, [..targets], _messagePackSerializerOptionsForKey), _serializer);
     }
 
     public T Single(TKey target)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Create<T>(new RedisPublishWriter(_subscriber, _channel, ImmutableArray<TKey>.Empty, [target], _messagePackSerializerOptionsForKey), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
+        return _proxyFactory.Create<T>(new RedisPublishWriter(_subscriber, _channel, ImmutableArray<TKey>.Empty, [target], _messagePackSerializerOptionsForKey), _serializer);
     }
 
     public void Dispose()

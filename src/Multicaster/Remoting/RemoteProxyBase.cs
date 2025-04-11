@@ -11,13 +11,11 @@ public abstract partial class RemoteProxyBase : IRemoteProxy
 {
     private readonly IRemoteReceiverWriter _writer;
     private readonly IRemoteSerializer _serializer;
-    private readonly IRemoteClientResultPendingTaskRegistry _pendingTasks;
 
-    protected RemoteProxyBase(IRemoteReceiverWriter writer, IRemoteSerializer serializer, IRemoteClientResultPendingTaskRegistry pendingTasks)
+    protected RemoteProxyBase(IRemoteReceiverWriter writer, IRemoteSerializer serializer)
     {
         _writer = writer;
         _serializer = serializer;
-        _pendingTasks = pendingTasks;
     }
 
     bool IRemoteProxy.TryGetDirectWriter([NotNullWhen(true)] out IRemoteReceiverWriter? receiver)
@@ -55,8 +53,8 @@ public abstract partial class RemoteProxyBase : IRemoteProxy
         var messageId = Guid.NewGuid();
 
         var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var pendingTask = _pendingTasks.CreateTask(name, methodId, messageId, tcs, timeoutCancellationToken, _serializer);
-        _pendingTasks.Register(pendingTask);
+        var pendingTask = _writer.PendingTasks.CreateTask(name, methodId, messageId, tcs, timeoutCancellationToken, _serializer);
+        _writer.PendingTasks.Register(pendingTask);
         return (tcs.Task, messageId);
     }
 
@@ -65,8 +63,8 @@ public abstract partial class RemoteProxyBase : IRemoteProxy
         var messageId = Guid.NewGuid();
 
         var tcs = new TaskCompletionSource<TResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var pendingTask = _pendingTasks.CreateTask<TResult>(name, methodId, messageId, tcs, timeoutCancellationToken, _serializer);
-        _pendingTasks.Register(pendingTask);
+        var pendingTask = _writer.PendingTasks.CreateTask<TResult>(name, methodId, messageId, tcs, timeoutCancellationToken, _serializer);
+        _writer.PendingTasks.Register(pendingTask);
         return (tcs.Task, messageId);
     }
 
@@ -91,6 +89,9 @@ public abstract partial class RemoteProxyBase : IRemoteProxy
             _excludes = excludes;
             _targets = targets;
         }
+
+        IRemoteClientResultPendingTaskRegistry IRemoteReceiverWriter.PendingTasks
+            => NotSupportedRemoteClientResultPendingTaskRegistry.Instance;
 
         void IRemoteReceiverWriter.Write(ReadOnlyMemory<byte> payload)
         {
@@ -122,6 +123,9 @@ public abstract partial class RemoteProxyBase : IRemoteProxy
             _target = target;
         }
 
+        IRemoteClientResultPendingTaskRegistry IRemoteReceiverWriter.PendingTasks
+            => _remoteReceivers.GetValueOrDefault(_target)?.PendingTasks ?? throw new InvalidOperationException("The target is not found.");
+
         void IRemoteReceiverWriter.Write(ReadOnlyMemory<byte> payload)
         {
             try
@@ -143,6 +147,8 @@ public abstract partial class RemoteProxyBase : IRemoteProxy
         {
             Writer = writer;
         }
+
+        IRemoteClientResultPendingTaskRegistry IRemoteReceiverWriter.PendingTasks => Writer.PendingTasks;
 
         void IRemoteReceiverWriter.Write(ReadOnlyMemory<byte> payload)
         {
