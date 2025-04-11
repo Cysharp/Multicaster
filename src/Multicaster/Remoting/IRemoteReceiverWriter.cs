@@ -3,4 +3,5 @@
 public interface IRemoteReceiverWriter
 {
     void Write(ReadOnlyMemory<byte> payload);
+    IRemoteClientResultPendingTaskRegistry PendingTasks { get; }
 }

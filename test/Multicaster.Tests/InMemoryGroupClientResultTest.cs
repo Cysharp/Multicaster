@@ -324,4 +324,33 @@ public class InMemoryGroupClientResultTest
         Assert.Empty(receiverC.Received);
         Assert.Empty(receiverD.Received);
     }
+
+    [Fact]
+    public async Task NoTarget()
+    {
+        // Arrange
+        var receiverA = new TestInMemoryReceiver();
+        var receiverIdA = Guid.NewGuid();
+        var receiverB = new TestInMemoryReceiver();
+        var receiverIdB = Guid.NewGuid();
+        var receiverC = new TestInMemoryReceiver();
+        var receiverIdC = Guid.NewGuid();
+        var receiverD = new TestInMemoryReceiver();
+        var receiverIdD = Guid.NewGuid();
+        IMulticastGroupProvider groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
+        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
+        group.Add(receiverIdA, receiverA);
+        group.Add(receiverIdB, receiverB);
+        group.Add(receiverIdC, receiverC);
+        group.Add(receiverIdD, receiverD);
+
+        // Act
+        var target = group.Single(Guid.NewGuid());
+        var ex = await Record.ExceptionAsync(async () => await target.ClientResult_Parameter_Zero());
+
+        // Assert
+        Assert.NotNull(ex);
+        Assert.Equal("No invocable target found.", ex.Message);
+        Assert.IsType<InvalidOperationException>(ex);
+    }
 }

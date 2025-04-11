@@ -36,7 +36,7 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
         _serializer = serializer;
         _subject = $"Multicaster.Group/{name}";
 
-        All = proxyFactory.Create<T>(new NatsPublishWriter(_connection, _subject, ImmutableArray<TKey>.Empty, null, messagePackSerializerOptionsForKey), serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
+        All = proxyFactory.Create<T>(new NatsPublishWriter(_connection, _subject, ImmutableArray<TKey>.Empty, null, messagePackSerializerOptionsForKey), serializer);
         _messagePackSerializerOptionsForKey = messagePackSerializerOptionsForKey;
     }
 
@@ -47,6 +47,8 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
         private readonly ImmutableArray<TKey> _excludes;
         private readonly ImmutableArray<TKey>? _targets;
         private readonly MessagePackSerializerOptions _messagePackSerializerOptionsForKey;
+
+        public IRemoteClientResultPendingTaskRegistry PendingTasks => NotSupportedRemoteClientResultPendingTaskRegistry.Instance;
 
         public NatsPublishWriter(NatsConnection connection, string subject, ImmutableArray<TKey> excludes, ImmutableArray<TKey>? targets, MessagePackSerializerOptions messagePackSerializerOptionsForKey)
         {
@@ -88,19 +90,19 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
     public T Except(IEnumerable<TKey> excludes)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Create<T>(new NatsPublishWriter(_connection, _subject, [..excludes], null, _messagePackSerializerOptionsForKey), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
+        return _proxyFactory.Create<T>(new NatsPublishWriter(_connection, _subject, [..excludes], null, _messagePackSerializerOptionsForKey), _serializer);
     }
 
     public T Only(IEnumerable<TKey> targets)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Create<T>(new NatsPublishWriter(_connection, _subject, ImmutableArray<TKey>.Empty, [..targets], _messagePackSerializerOptionsForKey), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
+        return _proxyFactory.Create<T>(new NatsPublishWriter(_connection, _subject, ImmutableArray<TKey>.Empty, [..targets], _messagePackSerializerOptionsForKey), _serializer);
     }
 
     public T Single(TKey target)
     {
         ThrowIfDisposed();
-        return _proxyFactory.Create<T>(new NatsPublishWriter(_connection, _subject, ImmutableArray<TKey>.Empty, [target], _messagePackSerializerOptionsForKey), _serializer, NotSupportedRemoteClientResultPendingTaskRegistry.Instance);
+        return _proxyFactory.Create<T>(new NatsPublishWriter(_connection, _subject, ImmutableArray<TKey>.Empty, [target], _messagePackSerializerOptionsForKey), _serializer);
     }
 
     public void Dispose()
