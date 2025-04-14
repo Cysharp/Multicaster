@@ -407,4 +407,36 @@ public class RemoteGroupClientResultTest
         var target = group.Only(["InMemory"]);
         await Assert.ThrowsAsync<NotSupportedException>(async () => await target.ClientResult_Parameter_One(123));
     }
+
+    [Fact]
+    public async Task Group_Remote_CanceledByDispose()
+    {
+        // Arrange
+        var inMemoryProxyFactory = DynamicInMemoryProxyFactory.Instance;
+        var remoteProxyFactory = DynamicRemoteProxyFactory.Instance;
+        var serializer = new TestJsonRemoteSerializer();
+        var groupProvider = new RemoteGroupProvider(inMemoryProxyFactory, remoteProxyFactory, serializer);
+
+        var receiverWriterA = new TestRemoteReceiverWriter();
+        var receiverInMemory = new TestInMemoryReceiver();
+        var group = groupProvider.GetOrAddSynchronousGroup<string, ITestReceiver>("Test");
+
+        group.Add("Remote", remoteProxyFactory.CreateDirect<ITestReceiver>(receiverWriterA, serializer));
+        group.Add("InMemory", receiverInMemory);
+
+        // Act & Assert
+        var target = group.Single("Remote");
+        var task = target.ClientResult_Parameter_Zero();
+        Assert.False(task.IsCompleted);
+        Assert.NotEmpty(receiverWriterA.Written);
+        Assert.Equal(1, receiverWriterA.PendingTasks.Count);
+
+        receiverWriterA.PendingTasks.Dispose(); // Cancel all pending tasks.
+        var ex = await Record.ExceptionAsync(async () => await task);
+
+        // The task should be canceled by Dispose and removed from pending tasks.
+        Assert.True(task.IsCompleted);
+        Assert.Equal(0, receiverWriterA.PendingTasks.Count);
+        Assert.IsType<TaskCanceledException>(ex);
+    }
 }
