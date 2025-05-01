@@ -652,7 +652,7 @@ public class NatsGroupTest
         group2.Single(receiverC.Id.ToString()).Parameter_One(5432);
         group2.Except([receiverA.Id.ToString(), receiverB.Id.ToString(), receiverC.Id.ToString()]).Parameter_One(7654);
 
-        // We need to wait to receive the message from Redis.
+        // We need to wait to receive the message from NATS.
         await Task.Delay(500);
 
         // Assert
@@ -676,6 +676,8 @@ public class NatsGroupTest
         {
             var group = groupProvider.GetOrAddSynchronousGroup<string, ITestReceiver>("MyGroup");
             group.Add(receiverA.Id.ToString(), receiverA.Proxy);
+            // Wait for subscriptions to be established.
+            await Task.Delay(250);
 
             group.All.Parameter_One(1234);
             // We need to wait to receive the message from NATS.
@@ -704,5 +706,35 @@ public class NatsGroupTest
             group.Remove(receiverB.Id.ToString());
             group.Dispose();
         }
+    }
+
+    [Fact]
+    public async Task InvokeViaLocalEmptyGroup()
+    {
+        // Arrange
+        var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var serializer = new TestJsonRemoteSerializer();
+        IMulticastGroupProvider groupProvider = new NatsGroupProvider(proxyFactory, serializer, new NatsGroupOptions() { Url = _natsContainer.GetConnectionString() });
+        var receiverA = TestNatsReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverB = TestNatsReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+
+        // Act
+        using var group1 = groupProvider.GetOrAddSynchronousGroup<string, ITestReceiver>("MyGroup");
+        group1.Add(receiverA.Id.ToString(), receiverA.Proxy);
+        group1.Add(receiverB.Id.ToString(), receiverB.Proxy);
+        
+        // Wait for subscriptions to be established.
+        await Task.Delay(250);
+
+        using var group2 = groupProvider.GetOrAddSynchronousGroup<string, ITestReceiver>("MyGroup");
+
+        group2.All.Parameter_One(1234); // This group is empty, so the message will be sent to backplane.
+
+        // We need to wait to receive the message from NATS.
+        await Task.Delay(550);
+
+        // Assert
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234])], receiverA.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234])], receiverB.Writer.Written);
     }
 }
