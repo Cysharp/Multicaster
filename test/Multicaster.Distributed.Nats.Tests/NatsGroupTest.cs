@@ -661,4 +661,48 @@ public class NatsGroupTest
         Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [9876]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5432])], receiverC.Writer.Written);
         Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1098]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [7654])], receiverD.Writer.Written);
     }
+
+    [Fact]
+    public async Task UseSameNameGroupAfterDispose()
+    {
+        // Arrange
+        var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var serializer = new TestJsonRemoteSerializer();
+        IMulticastGroupProvider groupProvider = new NatsGroupProvider(proxyFactory, serializer, new NatsGroupOptions() { Url = _natsContainer.GetConnectionString() });
+        var receiverA = TestNatsReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverB = TestNatsReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+
+        // Act & Assert
+        {
+            var group = groupProvider.GetOrAddSynchronousGroup<string, ITestReceiver>("MyGroup");
+            group.Add(receiverA.Id.ToString(), receiverA.Proxy);
+
+            group.All.Parameter_One(1234);
+            // We need to wait to receive the message from NATS.
+            await Task.Delay(250);
+
+            Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234])], receiverA.Writer.Written);
+            Assert.Equal([], receiverB.Writer.Written);
+
+            group.Remove(receiverA.Id.ToString());
+
+            // Dispose the group "MyGroup".
+            group.Dispose();
+        }
+        {
+            // Expect to recreate the group "MyGroup" after disposing.
+            var group = groupProvider.GetOrAddSynchronousGroup<string, ITestReceiver>("MyGroup");
+            group.Add(receiverB.Id.ToString(), receiverB.Proxy);
+
+            group.All.Parameter_One(5678);
+            // We need to wait to receive the message from NATS.
+            await Task.Delay(250);
+
+            Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234])], receiverA.Writer.Written);
+            Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5678])], receiverB.Writer.Written);
+
+            group.Remove(receiverB.Id.ToString());
+            group.Dispose();
+        }
+    }
 }

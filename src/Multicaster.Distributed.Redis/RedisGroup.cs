@@ -4,8 +4,6 @@ using System.Collections.Immutable;
 using Cysharp.Runtime.Multicast.Internal;
 using Cysharp.Runtime.Multicast.Remoting;
 using MessagePack;
-using MessagePack.Formatters;
-using MessagePack.Resolvers;
 
 using StackExchange.Redis;
 
@@ -21,6 +19,7 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
     private readonly ConcurrentDictionary<TKey, IRemoteReceiverWriter> _receivers = new();
     private readonly SemaphoreSlim _lock = new(1);
     private readonly MessagePackSerializerOptions _messagePackSerializerOptionsForKey;
+    private readonly Action<RedisGroup<TKey, T>> _onDisposeAction;
 
     private ChannelMessageQueue? _messageQueue;
     private bool _disposed;
@@ -29,7 +28,7 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
 
     internal string Name { get; }
 
-    public RedisGroup(string name, ISubscriber subscriber, IRemoteProxyFactory proxyFactory, IRemoteSerializer serializer, MessagePackSerializerOptions messagePackSerializerOptions)
+    public RedisGroup(string name, ISubscriber subscriber, IRemoteProxyFactory proxyFactory, IRemoteSerializer serializer, MessagePackSerializerOptions messagePackSerializerOptions, Action<RedisGroup<TKey, T>> onDisposeAction)
     {
         Name = name;
         _subscriber = subscriber;
@@ -37,6 +36,7 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
         _serializer = serializer;
         _channel = new RedisChannel($"Multicaster.Group?name={name}", RedisChannel.PatternMode.Literal);
         _messagePackSerializerOptionsForKey = messagePackSerializerOptions;
+        _onDisposeAction = onDisposeAction;
 
         All = proxyFactory.Create<T>(new RedisPublishWriter(_subscriber, _channel, ImmutableArray<TKey>.Empty, null, _messagePackSerializerOptionsForKey), serializer);
     }
@@ -109,6 +109,8 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
         {
             _messageQueue.Unsubscribe();
         }
+
+        _onDisposeAction(this);
         _disposed = true;
     }
 

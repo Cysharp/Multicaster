@@ -1,8 +1,6 @@
 ﻿using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
-using System.Threading.Channels;
-
 using Cysharp.Runtime.Multicast.Internal;
 using Cysharp.Runtime.Multicast.Remoting;
 using MessagePack;
@@ -20,6 +18,8 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
     private readonly string _subject;
     private readonly ConcurrentDictionary<TKey, IRemoteReceiverWriter> _receivers = new();
     private readonly SemaphoreSlim _lock = new(1);
+    private readonly Action<NatsGroup<TKey, T>> _onDisposeAction;
+
     private CancellationTokenSource _subscriptionTokenSource = new();
     private Task? _runningSubscriptionTask;
     private bool _disposed;
@@ -28,13 +28,14 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
 
     internal string Name { get; }
 
-    public NatsGroup(string name, NatsConnection connection, IRemoteProxyFactory proxyFactory, IRemoteSerializer serializer, MessagePackSerializerOptions messagePackSerializerOptionsForKey)
+    public NatsGroup(string name, NatsConnection connection, IRemoteProxyFactory proxyFactory, IRemoteSerializer serializer, MessagePackSerializerOptions messagePackSerializerOptionsForKey, Action<NatsGroup<TKey, T>> onDisposeAction)
     {
         Name = name;
         _connection = connection;
         _proxyFactory = proxyFactory;
         _serializer = serializer;
         _subject = $"Multicaster.Group/{name}";
+        _onDisposeAction = onDisposeAction;
 
         All = proxyFactory.Create<T>(new NatsPublishWriter(_connection, _subject, ImmutableArray<TKey>.Empty, null, messagePackSerializerOptionsForKey), serializer);
         _messagePackSerializerOptionsForKey = messagePackSerializerOptionsForKey;
@@ -109,6 +110,7 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
     {
         if (_disposed) return;
         UnsubscribeAsync().GetAwaiter().GetResult();
+        _onDisposeAction(this);
         _disposed = true;
     }
 
