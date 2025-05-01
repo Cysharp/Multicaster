@@ -657,4 +657,30 @@ public class RedisGroupTest
             group.Dispose();
         }
     }
+
+    [Fact]
+    public async Task InvokeViaLocalEmptyGroup()
+    {
+        // Arrange
+        var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var serializer = new TestJsonRemoteSerializer();
+        IMulticastGroupProvider groupProvider = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
+        var receiverA = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverB = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+
+        // Act
+        using var group1 = groupProvider.GetOrAddSynchronousGroup<string, ITestReceiver>("MyGroup");
+        group1.Add(receiverA.Id.ToString(), receiverA.Proxy);
+        group1.Add(receiverB.Id.ToString(), receiverB.Proxy);
+        using var group2 = groupProvider.GetOrAddSynchronousGroup<string, ITestReceiver>("MyGroup");
+
+        group2.All.Parameter_One(1234); // This group is empty, so the message will be sent to backplane.
+
+        // We need to wait to receive the message from Redis.
+        await Task.Delay(100);
+
+        // Assert
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234])], receiverA.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234])], receiverB.Writer.Written);
+    }
 }
