@@ -624,6 +624,36 @@ public class InMemoryGroupTest
         Assert.Empty(groupProvider.AsPrivateProxy()._groups);
     }
 
+    [Fact]
+    public void UseSameNameGroupAfterDispose()
+    {
+        // Arrange
+        var receiverA = new TestInMemoryReceiver();
+        var receiverIdA = Guid.NewGuid();
+        var receiverB = new TestInMemoryReceiver();
+        var receiverIdB = Guid.NewGuid();
+
+        var groupProvider = new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
+
+        // Act & Assert
+        {
+            var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
+            group.Add(receiverIdA, receiverA);
+            group.Remove(receiverIdA);
+
+            // Dispose the group "MyGroup".
+            group.Dispose();
+        }
+        {
+            // Expect to recreate the group "MyGroup" after disposing.
+            var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
+            group.Add(receiverIdB, receiverB);
+            group.Remove(receiverIdB);
+
+            // Dispose the group "MyGroup".
+            group.Dispose();
+        }
+    }
     public interface IGreeterReceiver
     {
         void OnMessage(string name, string message);

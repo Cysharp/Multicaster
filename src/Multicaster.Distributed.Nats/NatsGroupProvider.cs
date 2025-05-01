@@ -36,11 +36,17 @@ public class NatsGroupProvider : IMulticastGroupProvider
 
     public IMulticastAsyncGroup<TKey, TReceiver> GetOrAddGroup<TKey, TReceiver>(string name)
         where TKey : IEquatable<TKey>
-        => (IMulticastAsyncGroup<TKey, TReceiver>)_groups.GetOrAdd((name, typeof(TKey), typeof(TReceiver)), _ => new NatsGroup<TKey, TReceiver>(name, _connection, _proxyFactory, _serializer, _messagePackSerializerOptionsForKey));
+        => (IMulticastAsyncGroup<TKey, TReceiver>)_groups.GetOrAdd((name, typeof(TKey), typeof(TReceiver)), _ => new NatsGroup<TKey, TReceiver>(name, _connection, _proxyFactory, _serializer, _messagePackSerializerOptionsForKey, Remove));
 
     public IMulticastSyncGroup<TKey, TReceiver> GetOrAddSynchronousGroup<TKey, TReceiver>(string name)
         where TKey : IEquatable<TKey>
-        => (IMulticastSyncGroup<TKey, TReceiver>)_groups.GetOrAdd((name, typeof(TKey), typeof(TReceiver)), _ => new NatsGroup<TKey, TReceiver>(name, _connection, _proxyFactory, _serializer, _messagePackSerializerOptionsForKey));
+        => (IMulticastSyncGroup<TKey, TReceiver>)_groups.GetOrAdd((name, typeof(TKey), typeof(TReceiver)), _ => new NatsGroup<TKey, TReceiver>(name, _connection, _proxyFactory, _serializer, _messagePackSerializerOptionsForKey, Remove));
+
+    private void Remove<TKey, TReceiver>(NatsGroup<TKey, TReceiver> group)
+        where TKey : IEquatable<TKey>
+    {
+        _groups.TryRemove((group.Name, typeof(TKey), typeof(TReceiver)), out _);
+    }
 }
 
 public class NatsGroupOptions

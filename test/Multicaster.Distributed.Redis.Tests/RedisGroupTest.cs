@@ -23,6 +23,11 @@ public class RedisGroupTest
         _redisContainer.StartAsync(TimeoutToken).GetAwaiter().GetResult();
     }
 
+    private static string CreateJsonSerializedInvocation(string nameOfMethod, IReadOnlyList<object?> args)
+        => CreateJsonSerializedInvocation(nameOfMethod, null, args);
+    private static string CreateJsonSerializedInvocation(string nameOfMethod, Guid? messageId, IReadOnlyList<object?> args)
+        => JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameOfMethod, FNV1A32.GetHashCode(nameOfMethod), messageId, args));
+
     [Fact]
     public async Task Broadcast()
     {
@@ -52,10 +57,10 @@ public class RedisGroupTest
         await Task.Delay(100);
 
         // Assert
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverA.Writer.Written);
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverB.Writer.Written);
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverC.Writer.Written);
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverD.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5678])], receiverA.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5678])], receiverB.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5678])], receiverC.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5678])], receiverD.Writer.Written);
     }
 
     [Fact]
@@ -90,10 +95,10 @@ public class RedisGroupTest
         await Task.Delay(100);
 
         // Assert
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}"""], receiverA.Writer.Written);
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}"""], receiverB.Writer.Written);
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverC.Writer.Written);
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverD.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234])], receiverA.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234])], receiverB.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5678])], receiverC.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5678])], receiverD.Writer.Written);
     }
 
 
@@ -132,10 +137,10 @@ public class RedisGroupTest
         await Task.Delay(100);
 
         // Assert
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}"""], receiverA.Writer.Written);
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}"""], receiverB.Writer.Written);
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverC.Writer.Written);
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverD.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234])], receiverA.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234])], receiverB.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5678])], receiverC.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5678])], receiverD.Writer.Written);
     }
 
     [Fact]
@@ -177,9 +182,9 @@ public class RedisGroupTest
         //   - GroupProvider(1): B
         //   - GroupProvider(2): D
         Assert.Equal([], receiverA.Writer.Written);
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverB.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5678])], receiverB.Writer.Written);
         Assert.Equal([], receiverC.Writer.Written);
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverD.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5678])], receiverD.Writer.Written);
     }
 
     [Fact]
@@ -221,9 +226,9 @@ public class RedisGroupTest
         //   - GroupProvider(1): B
         //   - GroupProvider(2): D
         Assert.Equal([], receiverA.Writer.Written);
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverB.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5678])], receiverB.Writer.Written);
         Assert.Equal([], receiverC.Writer.Written);
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverD.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5678])], receiverD.Writer.Written);
     }
 
     [Fact]
@@ -253,10 +258,10 @@ public class RedisGroupTest
         await Task.Delay(100);
 
         // Assert
-        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Zero), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Zero)), null, Array.Empty<object>()))], receiverA.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Zero), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Zero)), null, Array.Empty<object>()))], receiverB.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Zero), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Zero)), null, Array.Empty<object>()))], receiverC.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Zero), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Zero)), null, Array.Empty<object>()))], receiverD.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_Zero), [])], receiverA.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_Zero), [])], receiverB.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_Zero), [])], receiverC.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_Zero), [])], receiverD.Writer.Written);
         Assert.Equal(1, serializer.SerializeInvocationCallCount);
     }
 
@@ -287,10 +292,10 @@ public class RedisGroupTest
         await Task.Delay(100);
 
         // Assert
-        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverA.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverB.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverC.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverD.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_Many), [1234, "Hello", true, 9876543210L])], receiverA.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_Many), [1234, "Hello", true, 9876543210L])], receiverB.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_Many), [1234, "Hello", true, 9876543210L])], receiverC.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_Many), [1234, "Hello", true, 9876543210L])], receiverD.Writer.Written);
         Assert.Equal(1, serializer.SerializeInvocationCallCount);
     }
 
@@ -327,19 +332,19 @@ public class RedisGroupTest
 
         // Assert
         Assert.Equal([
-            JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello via GroupA; Area=1", true, 9876543210L])),
-            JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [5678, "Hey via GroupA; Area=2", false, 1234567890L])),
+            CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_Many), [1234, "Hello via GroupA; Area=1", true, 9876543210L]),
+            CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_Many), [5678, "Hey via GroupA; Area=2", false, 1234567890L]),
         ], receiverA.Writer.Written);
         Assert.Equal([
-            JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello via GroupA; Area=1", true, 9876543210L])),
-            JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [5678, "Hey via GroupA; Area=2", false, 1234567890L])),
+            CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_Many), [1234, "Hello via GroupA; Area=1", true, 9876543210L]),
+            CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_Many), [5678, "Hey via GroupA; Area=2", false, 1234567890L]),
         ], receiverB.Writer.Written);
         Assert.Equal([
-            JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Two), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Two)), null, [4321, "Konnichiwa via GroupB; Area=1"])),
-            JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Two), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Two)), null, [8765, "Hi via GroupB; Area=2"])),
+            CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_Two), [4321, "Konnichiwa via GroupB; Area=1"]),
+            CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_Two), [8765, "Hi via GroupB; Area=2"]),
         ], receiverC.Writer.Written); Assert.Equal([
-            JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Two), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Two)), null, [4321, "Konnichiwa via GroupB; Area=1"])),
-            JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Two), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Two)), null, [8765, "Hi via GroupB; Area=2"])),
+            CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_Two), [4321, "Konnichiwa via GroupB; Area=1"]),
+            CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_Two), [8765, "Hi via GroupB; Area=2"]),
         ], receiverD.Writer.Written);
         Assert.Equal(4, serializer.SerializeInvocationCallCount);
     }
@@ -374,10 +379,10 @@ public class RedisGroupTest
 
         // Assert
         Assert.Null(ex);
-        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Throw), FNV1A32.GetHashCode(nameof(ITestReceiver.Throw)), null, Array.Empty<object>()))], receiverA.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Throw), FNV1A32.GetHashCode(nameof(ITestReceiver.Throw)), null, Array.Empty<object>()))], receiverB.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Throw), FNV1A32.GetHashCode(nameof(ITestReceiver.Throw)), null, Array.Empty<object>()))], receiverC.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Throw), FNV1A32.GetHashCode(nameof(ITestReceiver.Throw)), null, Array.Empty<object>()))], receiverD.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Throw), [])], receiverA.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Throw), [])], receiverB.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Throw), [])], receiverC.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Throw), [])], receiverD.Writer.Written);
         Assert.Equal(1, serializer.SerializeInvocationCallCount);
     }
 
@@ -410,9 +415,9 @@ public class RedisGroupTest
 
         // Assert
         Assert.Equal([], receiverA.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverB.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_Many), [1234, "Hello", true, 9876543210L])], receiverB.Writer.Written);
         Assert.Equal([], receiverC.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverD.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_Many), [1234, "Hello", true, 9876543210L])], receiverD.Writer.Written);
         Assert.Equal(1, serializer.SerializeInvocationCallCount);
     }
 
@@ -444,9 +449,9 @@ public class RedisGroupTest
         await Task.Delay(100);
 
         // Assert
-        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverA.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_Many), [1234, "Hello", true, 9876543210L])], receiverA.Writer.Written);
         Assert.Equal([], receiverB.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverC.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_Many), [1234, "Hello", true, 9876543210L])], receiverC.Writer.Written);
         Assert.Equal([], receiverD.Writer.Written);
         Assert.Equal(1, serializer.SerializeInvocationCallCount);
     }
@@ -480,7 +485,7 @@ public class RedisGroupTest
 
         // Assert
         Assert.Equal([], receiverA.Writer.Written);
-        Assert.Equal([JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameof(ITestReceiver.Parameter_Many), FNV1A32.GetHashCode(nameof(ITestReceiver.Parameter_Many)), null, [1234, "Hello", true, 9876543210L]))], receiverB.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_Many), [1234, "Hello", true, 9876543210L])], receiverB.Writer.Written);
         Assert.Equal([], receiverC.Writer.Written);
         Assert.Equal([], receiverD.Writer.Written);
         Assert.Equal(1, serializer.SerializeInvocationCallCount);
@@ -559,10 +564,10 @@ public class RedisGroupTest
         await Task.Delay(100);
 
         // Assert
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverA.Writer.Written);
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[4567]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[8910]}"""], receiverB.Writer.Written);
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[9876]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5432]}"""], receiverC.Writer.Written);
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1098]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[7654]}"""], receiverD.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5678])], receiverA.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [4567]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [8910])], receiverB.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [9876]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5432])], receiverC.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1098]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [7654])], receiverD.Writer.Written);
     }
 
     [Fact]
@@ -603,9 +608,53 @@ public class RedisGroupTest
         await Task.Delay(100);
 
         // Assert
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverA.Writer.Written);
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[4567]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[8910]}"""], receiverB.Writer.Written);
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[9876]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5432]}"""], receiverC.Writer.Written);
-        Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1098]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[7654]}"""], receiverD.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5678])], receiverA.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [4567]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [8910])], receiverB.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [9876]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5432])], receiverC.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1098]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [7654])], receiverD.Writer.Written);
+    }
+
+    [Fact]
+    public async Task UseSameNameGroupAfterDispose()
+    {
+        // Arrange
+        var proxyFactory = DynamicRemoteProxyFactory.Instance;
+        var serializer = new TestJsonRemoteSerializer();
+        IMulticastGroupProvider groupProvider = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
+        var receiverA = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+        var receiverB = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
+
+        // Act & Assert
+        {
+            var group = groupProvider.GetOrAddSynchronousGroup<string, ITestReceiver>("MyGroup");
+            group.Add(receiverA.Id.ToString(), receiverA.Proxy);
+
+            group.All.Parameter_One(1234);
+            // We need to wait to receive the message from Redis.
+            await Task.Delay(100);
+
+            Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234])], receiverA.Writer.Written);
+            Assert.Equal([], receiverB.Writer.Written);
+
+            group.Remove(receiverA.Id.ToString());
+
+            // Dispose the group "MyGroup".
+            group.Dispose();
+        }
+        {
+            // Expect to recreate the group "MyGroup" after disposing.
+            var group = groupProvider.GetOrAddSynchronousGroup<string, ITestReceiver>("MyGroup");
+            group.Add(receiverB.Id.ToString(), receiverB.Proxy);
+
+            group.All.Parameter_One(5678);
+            // We need to wait to receive the message from Redis.
+            await Task.Delay(100);
+
+            Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234])], receiverA.Writer.Written);
+            Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5678])], receiverB.Writer.Written);
+
+            group.Remove(receiverB.Id.ToString());
+            group.Dispose();
+        }
     }
 }

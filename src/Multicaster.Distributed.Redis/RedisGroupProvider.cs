@@ -48,11 +48,17 @@ public class RedisGroupProvider : IMulticastGroupProvider, IDisposable
 
     public IMulticastAsyncGroup<TKey, TReceiver> GetOrAddGroup<TKey, TReceiver>(string name)
         where TKey : IEquatable<TKey>
-        => (IMulticastAsyncGroup<TKey, TReceiver>)_groups.GetOrAdd((name, typeof(TKey), typeof(TReceiver)), _ => new RedisGroup<TKey, TReceiver>(_prefix + name, _subscriber, _proxyFactory, _serializer, _messagePackSerializerOptionsForKey));
+        => (IMulticastAsyncGroup<TKey, TReceiver>)_groups.GetOrAdd((name, typeof(TKey), typeof(TReceiver)), _ => new RedisGroup<TKey, TReceiver>(_prefix + name, _subscriber, _proxyFactory, _serializer, _messagePackSerializerOptionsForKey, Remove));
 
     public IMulticastSyncGroup<TKey, TReceiver> GetOrAddSynchronousGroup<TKey, TReceiver>(string name)
         where TKey : IEquatable<TKey>
-        => (IMulticastSyncGroup<TKey, TReceiver>)_groups.GetOrAdd((name, typeof(TKey), typeof(TReceiver)), _ => new RedisGroup<TKey, TReceiver>(_prefix + name, _subscriber, _proxyFactory, _serializer, _messagePackSerializerOptionsForKey));
+        => (IMulticastSyncGroup<TKey, TReceiver>)_groups.GetOrAdd((name, typeof(TKey), typeof(TReceiver)), _ => new RedisGroup<TKey, TReceiver>(_prefix + name, _subscriber, _proxyFactory, _serializer, _messagePackSerializerOptionsForKey, Remove));
+
+    private void Remove<TKey, TReceiver>(RedisGroup<TKey, TReceiver> group)
+        where TKey : IEquatable<TKey>
+    {
+        _groups.TryRemove((group.Name, typeof(TKey), typeof(TReceiver)), out _);
+    }
 
     public void Dispose()
     {
