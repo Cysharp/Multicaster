@@ -6,6 +6,7 @@ using Cysharp.Runtime.Multicast.Internal;
 using Cysharp.Runtime.Multicast.Remoting;
 using Multicaster.Tests;
 using StackExchange.Redis;
+
 using Testcontainers.Redis;
 
 namespace Multicaster.Distributed.Redis.Tests;
@@ -101,7 +102,6 @@ public class RedisGroupTest
         Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5678])], receiverD.Writer.Written);
     }
 
-
     [Fact]
     public async Task RemoveAllMembersAndUnsubscribe()
     {
@@ -113,9 +113,16 @@ public class RedisGroupTest
         var receiverC = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
         var receiverD = TestRedisReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
 
-        IMulticastGroupProvider groupProvider = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
+        var profiler = new AsyncLocalSeRedisProfiler();
+        var conn = await ConnectionMultiplexer.ConnectAsync(_redisContainer.GetConnectionString());
+        conn.RegisterProfiler(profiler.GetSession);
+        IMulticastGroupProvider groupProvider = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionMultiplexer = conn });
         var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
-        IMulticastGroupProvider groupProvider2 = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionString = _redisContainer.GetConnectionString() });
+
+        var profiler2 = new AsyncLocalSeRedisProfiler();
+        var conn2 = await ConnectionMultiplexer.ConnectAsync(_redisContainer.GetConnectionString());
+        conn2.RegisterProfiler(profiler2.GetSession);
+        IMulticastGroupProvider groupProvider2 = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ConnectionMultiplexer = conn2 });
         using var group2 = groupProvider2.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
 
         // Act
@@ -136,11 +143,19 @@ public class RedisGroupTest
         // We need to wait to receive the message from Redis.
         await Task.Delay(100);
 
+        // Get published Redis commands on `conn`.
+        var publishedRedisCommands = profiler.GetSession().FinishProfiling().ToArray();
+        var publishedRedisCommands2 = profiler2.GetSession().FinishProfiling().ToArray();
+
         // Assert
         Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234])], receiverA.Writer.Written);
         Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234])], receiverB.Writer.Written);
         Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5678])], receiverC.Writer.Written);
         Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5678])], receiverD.Writer.Written);
+        Assert.Equal(3, publishedRedisCommands.Length);
+        Assert.Equal(["SUBSCRIBE", "PUBLISH", "UNSUBSCRIBE"], publishedRedisCommands.Select(x => x.Command));
+        Assert.Equal(2, publishedRedisCommands2.Length);
+        Assert.Equal(["SUBSCRIBE", "PUBLISH"], publishedRedisCommands2.Select(x => x.Command));
     }
 
     [Fact]
