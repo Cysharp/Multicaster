@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Cysharp.Runtime.Multicast;
 using Cysharp.Runtime.Multicast.Distributed.Redis;
 using Cysharp.Runtime.Multicast.InMemory;
@@ -11,7 +11,7 @@ using Testcontainers.Redis;
 
 namespace Multicaster.Distributed.Redis.Tests;
 
-public class RedisGroupTest
+public class RedisGroupTest : RedisGroupTestBase
 {
     private readonly CancellationTokenSource _timeoutTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(60));
     protected CancellationToken TimeoutToken => _timeoutTokenSource.Token;
@@ -23,11 +23,6 @@ public class RedisGroupTest
         _redisContainer = new RedisBuilder().Build();
         _redisContainer.StartAsync(TimeoutToken).GetAwaiter().GetResult();
     }
-
-    private static string CreateJsonSerializedInvocation(string nameOfMethod, IReadOnlyList<object?> args)
-        => CreateJsonSerializedInvocation(nameOfMethod, null, args);
-    private static string CreateJsonSerializedInvocation(string nameOfMethod, Guid? messageId, IReadOnlyList<object?> args)
-        => JsonSerializer.Serialize(new TestJsonRemoteSerializer.SerializedInvocation(nameOfMethod, FNV1A32.GetHashCode(nameOfMethod), messageId, args));
 
     [Fact]
     public async Task Broadcast()
