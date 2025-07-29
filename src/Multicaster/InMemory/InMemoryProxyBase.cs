@@ -4,6 +4,8 @@ using System.Runtime.CompilerServices;
 
 namespace Cysharp.Runtime.Multicast.InMemory;
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
 public abstract class InMemoryProxyBase<TKey, T>
     where TKey : IEquatable<TKey>
 {

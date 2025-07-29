@@ -2,6 +2,8 @@
 using System.Collections.Immutable;
 using Cysharp.Runtime.Multicast.InMemory;
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
 namespace Cysharp.Runtime.Multicast.Remoting;
 
 public class RemoteGroupProvider : IMulticastGroupProvider
@@ -18,10 +20,12 @@ public class RemoteGroupProvider : IMulticastGroupProvider
         _remoteSerializer = remoteSerializer;
     }
 
+    /// <inheritdoc />
     public IMulticastAsyncGroup<TKey, T> GetOrAddGroup<TKey, T>(string name)
         where TKey : IEquatable<TKey>
         => (IMulticastAsyncGroup<TKey, T>)_groups.GetOrAdd((typeof(TKey), typeof(T), name), _ => new RemoteCompositeGroup<TKey, T>(name, _proxyFactory, _remoteProxyFactory, _remoteSerializer, Remove));
 
+    /// <inheritdoc />
     public IMulticastSyncGroup<TKey, T> GetOrAddSynchronousGroup<TKey, T>(string name)
         where TKey : IEquatable<TKey>
         => (IMulticastSyncGroup<TKey, T>)_groups.GetOrAdd((typeof(TKey), typeof(T), name), _ => new RemoteCompositeGroup<TKey, T>(name, _proxyFactory, _remoteProxyFactory, _remoteSerializer, Remove));

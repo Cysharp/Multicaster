@@ -1,7 +1,13 @@
 ﻿using System.Buffers;
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
 namespace Cysharp.Runtime.Multicast.Remoting;
 
+/// <summary>
+/// Represents a task that is pending completion, typically used for managing asynchronous operations in a remote
+/// communication context.
+/// </summary>
 public class PendingTask
 {
     private readonly Func<PendingTask, IRemoteSerializer, ReadOnlyMemory<byte>, bool> _trySetResult;

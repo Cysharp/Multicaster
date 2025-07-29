@@ -1,10 +1,18 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Immutable;
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
 namespace Cysharp.Runtime.Multicast.Remoting;
 
+/// <summary>
+/// Defines a factory for creating remote proxy instances that communicate with a remote receiver.
+/// </summary>
 public interface IRemoteProxyFactory
 {
+    /// <summary>
+    /// Creates an instance of the specified type <typeparamref name="T"/> using the provided remote receiver and serializer.
+    /// </summary>
     T Create<T>(IRemoteReceiverWriter receiver, IRemoteSerializer serializer);
 }
 

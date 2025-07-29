@@ -3,6 +3,8 @@ using Cysharp.Runtime.Multicast.Internal;
 
 namespace Cysharp.Runtime.Multicast.Remoting;
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
 public partial class RemoteProxyBase
 {
     protected void Invoke<T1>(string name, int methodId, T1 arg1)

@@ -1,5 +1,7 @@
 ﻿using System.Collections.Concurrent;
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
 namespace Cysharp.Runtime.Multicast.Remoting;
 
 public class RemoteOnlyGroupProvider : IMulticastGroupProvider
@@ -16,10 +18,12 @@ public class RemoteOnlyGroupProvider : IMulticastGroupProvider
         _pendingTasks = pendingTasks;
     }
 
+    /// <inheritdoc />
     public IMulticastAsyncGroup<TKey, T> GetOrAddGroup<TKey, T>(string name)
         where TKey : IEquatable<TKey>
         => (IMulticastAsyncGroup<TKey, T>)_groups.GetOrAdd((typeof(T), name), _ => new RemoteGroup<TKey, T>(name, _proxyFactory, _serializer, Remove));
 
+    /// <inheritdoc />
     public IMulticastSyncGroup<TKey, T> GetOrAddSynchronousGroup<TKey, T>(string name)
         where TKey : IEquatable<TKey>
         => (IMulticastSyncGroup<TKey, T>)_groups.GetOrAdd((typeof(T), name), _ => new RemoteGroup<TKey, T>(name, _proxyFactory, _serializer, Remove));

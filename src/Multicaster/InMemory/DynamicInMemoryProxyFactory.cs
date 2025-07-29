@@ -2,8 +2,13 @@
 using System.Reflection;
 using System.Reflection.Emit;
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
 namespace Cysharp.Runtime.Multicast.InMemory;
 
+/// <summary>
+/// Provides a factory for dynamically creating in-memory proxy instances for a specified interface type.
+/// </summary>
 public class DynamicInMemoryProxyFactory : IInMemoryProxyFactory
 {
     public static IInMemoryProxyFactory Instance { get; } = new DynamicInMemoryProxyFactory();
