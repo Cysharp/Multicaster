@@ -1,6 +1,8 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Immutable;
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
 namespace Cysharp.Runtime.Multicast.InMemory;
 
 public class InMemoryGroupProvider : IMulticastGroupProvider
@@ -13,10 +15,12 @@ public class InMemoryGroupProvider : IMulticastGroupProvider
         _proxyFactory = proxyFactory;
     }
 
+    /// <inheritdoc />
     public IMulticastAsyncGroup<TKey, T> GetOrAddGroup<TKey, T>(string name)
         where TKey : IEquatable<TKey>
         => (IMulticastAsyncGroup<TKey, T>)_groups.GetOrAdd((typeof(TKey), typeof(T), name), _ => new InMemoryGroup<TKey, T>(name, _proxyFactory, Remove));
 
+    /// <inheritdoc />
     public IMulticastSyncGroup<TKey, T> GetOrAddSynchronousGroup<TKey, T>(string name)
         where TKey : IEquatable<TKey>
         => (IMulticastSyncGroup<TKey, T>)_groups.GetOrAdd((typeof(TKey), typeof(T), name), _ => new InMemoryGroup<TKey, T>(name, _proxyFactory, Remove));

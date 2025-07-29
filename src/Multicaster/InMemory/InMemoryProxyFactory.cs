@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Concurrent;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Runtime.InteropServices;
+
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 namespace Cysharp.Runtime.Multicast.InMemory;
 

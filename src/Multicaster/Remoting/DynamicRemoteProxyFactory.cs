@@ -4,8 +4,14 @@ using System.Reflection.Emit;
 
 namespace Cysharp.Runtime.Multicast.Remoting;
 
+/// <summary>
+/// Provides a factory for dynamically creating remote proxy instances that implement a specified interface.
+/// </summary>
 public class DynamicRemoteProxyFactory : IRemoteProxyFactory
 {
+    /// <summary>
+    /// Gets the singleton instance of the remote proxy factory.
+    /// </summary>
     public static IRemoteProxyFactory Instance { get; } = new DynamicRemoteProxyFactory();
 
     private static readonly AssemblyBuilder _assemblyBuilder;
@@ -17,6 +23,7 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
         _moduleBuilder = _assemblyBuilder.DefineDynamicModule("Multicaster");
     }
 
+    /// <inheritdoc />
     public T Create<T>(IRemoteReceiverWriter writer, IRemoteSerializer serializer)
     {
         return Core<T>.Create(writer, serializer);

@@ -2,6 +2,8 @@
 
 namespace Cysharp.Runtime.Multicast.Remoting;
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
 public interface IRemoteSerializer
 {
     void SerializeInvocation(IBufferWriter<byte> writer, in SerializationContext ctx);
