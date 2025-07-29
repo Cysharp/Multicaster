@@ -28,13 +28,13 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
 
     internal string Name { get; }
 
-    public RedisGroup(string name, ISubscriber subscriber, IRemoteProxyFactory proxyFactory, IRemoteSerializer serializer, MessagePackSerializerOptions messagePackSerializerOptions, Action<RedisGroup<TKey, T>> onDisposeAction)
+    public RedisGroup(string name, Func<string, RedisChannel> redisChannelFactory, ISubscriber subscriber, IRemoteProxyFactory proxyFactory, IRemoteSerializer serializer, MessagePackSerializerOptions messagePackSerializerOptions, Action<RedisGroup<TKey, T>> onDisposeAction)
     {
         Name = name;
         _subscriber = subscriber;
         _proxyFactory = proxyFactory;
         _serializer = serializer;
-        _channel = new RedisChannel($"Multicaster.Group?name={name}", RedisChannel.PatternMode.Literal);
+        _channel = redisChannelFactory(name);
         _messagePackSerializerOptionsForKey = messagePackSerializerOptions;
         _onDisposeAction = onDisposeAction;
 
