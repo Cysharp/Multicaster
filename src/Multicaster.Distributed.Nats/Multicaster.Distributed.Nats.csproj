@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
 
     <!-- NuGet -->
+    <IsPackable>true</IsPackable>
     <PackageId>Multicaster.Distributed.Nats</PackageId>
     <Description>An extension package that adds NATS backend support for Multicaster.</Description>
 
