@@ -9,6 +9,7 @@ By default, Multicaster uses dynamic code generation (`System.Reflection.Emit`) 
 - .NET Native AOT publishing
 - iOS/Android with trimming enabled
 - Blazor WebAssembly with AOT
+- MagicOnion StreamingHub with AOT
 
 The `Multicaster.SourceGenerator` package provides a source generator that creates these proxy implementations at compile time, making them fully compatible with AOT scenarios.
 
@@ -20,6 +21,14 @@ Add the `Multicaster.SourceGenerator` package to your project:
 <ItemGroup>
   <PackageReference Include="Multicaster" Version="x.x.x" />
   <PackageReference Include="Multicaster.SourceGenerator" Version="x.x.x" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+</ItemGroup>
+```
+
+Or if using project reference (e.g., during development):
+
+```xml
+<ItemGroup>
+  <ProjectReference Include="path/to/Multicaster.SourceGenerator.csproj" OutputItemType="Analyzer" />
 </ItemGroup>
 ```
 
@@ -143,3 +152,27 @@ If you see build errors in the generated code, ensure:
 - All receiver types are interfaces
 - Method signatures are valid (void or Task/Task<T> return types)
 - Parameter count doesn't exceed 15
+
+## Integration with MagicOnion
+
+When using Multicaster with MagicOnion's StreamingHub for AOT support:
+
+```csharp
+// Define your StreamingHub receiver interface
+public interface IChatHubReceiver
+{
+    void OnMessage(string user, string message);
+    void OnUserJoined(string user);
+}
+
+// Create a proxy factory with the receiver interface
+[MulticasterProxyGeneration(typeof(IChatHubReceiver))]
+public partial class MulticasterProxyFactory { }
+
+// Configure MagicOnion to use the static proxy factory
+builder.Services.AddMagicOnion()
+    .UseStaticMethodProvider<MagicOnionMethodProvider>()
+    .UseStaticProxyFactory<MulticasterProxyFactory>();
+```
+
+See the [MagicOnion AOT Sample](https://github.com/Cysharp/MagicOnion/tree/main/samples/AotSample) for a complete example.
