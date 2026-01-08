@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
 
     <!-- NuGet-->
+    <IsPackable>true</IsPackable>
     <PackageId>Multicaster.Distributed.Redis</PackageId>
     <Description>An extension package that adds Redis backend support for Multicaster.</Description>
 

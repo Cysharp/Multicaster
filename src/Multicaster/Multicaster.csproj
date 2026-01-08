@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
 
     <!-- NuGet -->
+    <IsPackable>true</IsPackable>
     <PackageId>Multicaster</PackageId>
     <Description>Provides a proxy for transparently invoking methods of multiple POCO instances or remote clients through an interface.</Description>
 

@@ -19,25 +19,11 @@ jobs:
       - uses: Cysharp/Actions/.github/actions/checkout@main
       - uses: Cysharp/Actions/.github/actions/setup-dotnet@main
       - run: dotnet tool restore
-      - run: dotnet build -c Debug -p:DefineConstants=RUNNING_IN_CI
-      - run: dotnet pack ./src/Multicaster/Multicaster.csproj -c Debug --no-build -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg
-      - run: dotnet retest -- -c Debug --no-build
+      - run: dotnet build -c Release -p:DefineConstants=RUNNING_IN_CI
+      - run: dotnet pack -c Release --no-build -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg
+      - run: dotnet retest -- -c Release --no-build
       - uses: Cysharp/Actions/.github/actions/upload-artifact@main
         with:
           name: nuget
-          path: ./src/Multicaster/bin/Debug/*.*nupkg
+          path: ./src/Multicaster/bin/Release/*.*nupkg
           retention-days: 1
-
-  test-release-build:
-    name: Run tests using Release build
-    needs: [ build-debug ]
-    permissions:
-      contents: read
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: Cysharp/Actions/.github/actions/checkout@main
-      - uses: Cysharp/Actions/.github/actions/setup-dotnet@main
-      - run: dotnet tool restore
-      - run: dotnet build -c Release -p:DefineConstants=RUNNING_IN_CI
-      - run: dotnet retest -- -c Release --no-build
