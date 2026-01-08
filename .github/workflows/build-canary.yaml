@@ -37,6 +37,7 @@ jobs:
           retention-days: 1
 
   canary-push:
+    name: Push packages to Azure Artifacts
     needs: [canary-build]
     permissions:
       contents: read
