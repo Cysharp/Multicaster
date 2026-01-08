@@ -1,0 +1,62 @@
+name: Build-Canary
+
+on:
+  push:
+    branches:
+      - main
+      - release/**
+      - experimental/**
+    tags:
+      - "!*" # not a tag pus
+    paths-ignore:
+      - '**.md'
+      - .github/**
+      - docs/**
+      - samples/**
+  workflow_dispatch:
+
+jobs:
+  canary-build:
+    name: Build and run tests
+    permissions:
+      contents: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: Cysharp/Actions/.github/actions/checkout@main
+      - uses: Cysharp/Actions/.github/actions/setup-dotnet@main
+      - run: echo "MULTICASTER_VERSION=ci-${GITHUB_REF_NAME//\//-}-$(date '+%Y%m%d-%H%M%S')+${GITHUB_SHA:0:6}" >> $GITHUB_ENV
+      - run: echo "MULTICASTER_VERSION=${MULTICASTER_VERSION}"
+      - run: dotnet tool restore
+      - run: dotnet build -c Release -p:DefineConstants=RUNNING_IN_CI -p:VersionSuffix=${MULTICASTER_VERSION}
+      - run: dotnet pack ./src/Multicaster/Multicaster.csproj -c Release --no-build -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg -p:VersionSuffix=${MULTICASTER_VERSION}
+      - uses: Cysharp/Actions/.github/actions/upload-artifact@main
+        with:
+          name: nuget
+          path: ./src/Multicaster/bin/Release/*.*nupkg
+          retention-days: 1
+
+  canary-push:
+    needs: [canary-build]
+    permissions:
+      contents: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      NUGET_CREDENTIALPROVIDER_SESSIONTOKENCACHE_ENABLED: true
+    steps:
+      - name: Load secrets
+        id: op-load-secret
+        uses: 1password/load-secrets-action@8d0d610af187e78a2772c2d18d627f4c52d3fbfb # v3.1.0
+        with:
+          export-env: false
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN_PUBLIC }}
+          VSS_NUGET_EXTERNAL_FEED_ENDPOINTS_PUBLIC_CANARY: "op://${{ vars.OP_VAULT_ACTIONS_PUBLIC }}/VSS_NUGET_EXTERNAL_FEED_ENDPOINTS_PUBLIC_CANARY/credential"
+      - uses: Cysharp/Actions/.github/actions/download-artifact@main
+      # Upload to NuGet
+      - run: echo "VSS_NUGET_EXTERNAL_FEED_ENDPOINTS=${FEED_ENDPOINTS}" >> $GITHUB_ENV
+        env:
+          FEED_ENDPOINTS: ${{ steps.op-load-secret.outputs.VSS_NUGET_EXTERNAL_FEED_ENDPOINTS_PUBLIC_CANARY }}
+      - run: wget -qO- https://raw.githubusercontent.com/Microsoft/artifacts-credprovider/master/helpers/installcredprovider.sh | bash
+      - run: dotnet nuget push "./nuget/*.nupkg" --skip-duplicate -s https://pkgs.dev.azure.com/cysharp/Public/_packaging/Canary-Build/nuget/v2 -k AzureDevOps
