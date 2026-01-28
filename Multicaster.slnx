@@ -1,0 +1,28 @@
+<Solution>
+  <Folder Name="/perf/">
+    <Project Path="perf/MicroBenchmark/MicroBenchmark.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Solution Items/GitHub Actions/">
+    <File Path=".github/workflows/build-canary.yaml" />
+    <File Path=".github/workflows/build-main.yaml" />
+    <File Path=".github/workflows/build-release.yaml" />
+    <File Path=".github/workflows/stale.yaml" />
+  </Folder>
+  <Folder Name="/src/">
+    <File Path="src/Directory.Build.props" />
+    <Project Path="src/Multicaster.Distributed.Nats/Multicaster.Distributed.Nats.csproj" />
+    <Project Path="src/Multicaster.Distributed.Redis/Multicaster.Distributed.Redis.csproj" />
+    <Project Path="src/Multicaster/Multicaster.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <File Path="test/Directory.Build.props" />
+    <Project Path="test/Multicaster.Distributed.Nats.Tests/Multicaster.Distributed.Nats.Tests.csproj" />
+    <Project Path="test/Multicaster.Distributed.Redis.Tests/Multicaster.Distributed.Redis.Tests.csproj" />
+    <Project Path="test/Multicaster.Tests/Multicaster.Tests.csproj" />
+  </Folder>
+</Solution>
