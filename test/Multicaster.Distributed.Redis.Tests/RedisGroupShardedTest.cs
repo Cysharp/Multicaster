@@ -45,7 +45,7 @@ public class RedisGroupShardedTest : RedisGroupTestBase, IDisposable
                 var builder = new RedisBuilder()
                     .WithNetwork(_network)
                     .WithHostname($"redis-node-{x}")
-                    .WithImage("bitnami/redis-cluster:8.0")
+                    .WithImage("public.ecr.aws/bitnami/redis-cluster:8.0")
                     .WithEnvironment("ALLOW_EMPTY_PASSWORD", "yes")
                     .WithEnvironment("REDIS_NODES", nodes)
                     .WithEnvironment("REDIS_PORT_NUMBER", $"{portBase + x}")
