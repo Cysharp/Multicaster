@@ -17,8 +17,8 @@ class TestRemoteReceiverWriter :IRemoteReceiverWriter
         PendingTasks = pendingTasks ?? new();
     }
 
-    public void Write(ReadOnlyMemory<byte> payload)
+    public void Write(InvocationWriteContext context)
     {
-        Written.Add(Encoding.UTF8.GetString(payload.Span));
+        Written.Add(Encoding.UTF8.GetString(context.Payload.Span));
     }
 }

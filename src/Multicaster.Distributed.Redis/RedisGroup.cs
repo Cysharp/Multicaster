@@ -60,13 +60,13 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
             _optionsForKey = optionsForKey;
         }
 
-        public void Write(ReadOnlyMemory<byte> payload)
+        public void Write(InvocationWriteContext context)
         {
             using var bufferWriter = ArrayPoolBufferWriter.RentThreadStaticWriter();
             var writer = new MessagePackWriter(bufferWriter);
 
-            // Redis-format: [[excludes], [targets], [raw-body]]
-            writer.WriteArrayHeader(3);
+            // Redis-format: [[excludes], [targets], method-id, [raw-body]]
+            writer.WriteArrayHeader(4);
 
             MessagePackSerializer.Serialize(ref writer, _excludes, _optionsForKey);
             if (_targets is null)
@@ -77,8 +77,9 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
             {
                 MessagePackSerializer.Serialize(ref writer,  _targets.Value, _optionsForKey);
             }
+            writer.Write(context.MethodId);
             writer.Flush();
-            bufferWriter.Write(payload.Span);
+            bufferWriter.Write(context.Payload.Span);
 
             _subscriber.Publish(_channel, bufferWriter.WrittenMemory);
         }
@@ -125,20 +126,22 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
 
         var arrayLength = reader.ReadArrayHeader();
 
-        // Broadcast: Array(3)[[Excludes], [Targets], [Message]]
+        // Broadcast: Array(4)[[Excludes], [Targets], MethodId [Message]]
         // Remove: Array(2)[0x0, Id]
-        if (arrayLength == 3)
+        if (arrayLength == 5)
         {
             // Broadcast
             var excludes = MessagePackSerializer.Deserialize<TKey[]>(ref reader, _messagePackSerializerOptionsForKey);
             var targets = MessagePackSerializer.Deserialize<TKey[]>(ref reader, _messagePackSerializerOptionsForKey);
+            var methodId = reader.ReadInt32();
             var payload = messageBytes.AsMemory((int)reader.Consumed);
+            var context = new InvocationWriteContext(methodId, null, payload);
 
             foreach (var receiver in _receivers)
             {
                 if (excludes is not null && excludes.Contains(receiver.Key)) continue;
                 if (targets is not null && !targets.Contains(receiver.Key)) continue;
-                receiver.Value.Write(payload);
+                receiver.Value.Write(context);
             }
         }
         else if (arrayLength == 2)

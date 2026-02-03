@@ -1,10 +1,11 @@
-﻿<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ template debug="false" hostspecific="false" language="C#" #>
 <#@ assembly name="System.Core" #>
 <#@ import namespace="System" #>
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 <#@ output extension=".cs" #>
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 using Cysharp.Runtime.Multicast.Internal;
 
@@ -17,11 +18,11 @@ public partial class RemoteProxyBase
     var methodParams = string.Join(", ", Enumerable.Range(1, i).Select(x => $"T{x} arg{x}"));
     var methodArgs = string.Join(", ", Enumerable.Range(1, i).Select(x => $"arg{x}"));
 #>
-    protected void Invoke<<#= tArgs #>>(string name, int methodId, <#= methodParams #>)
+    protected void Invoke<<#= tArgs #>>(MethodInvocationContext ctx, <#= methodParams #>)
     {
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        _serializer.SerializeInvocation(writer, <#= methodArgs #>, new SerializationContext(name, methodId, null));
-        _writer.Write(writer.WrittenMemory);
+        _serializer.SerializeInvocation(writer, <#= methodArgs #>, new SerializationContext(ctx.MethodName, ctx.MethodId, null));
+        _writer.Write(new InvocationWriteContext(ctx, null, writer.WrittenMemory));
     }
 <# } #>
 
@@ -30,13 +31,13 @@ public partial class RemoteProxyBase
     var methodParams = string.Join(", ", Enumerable.Range(1, i).Select(x => $"T{x} arg{x}"));
     var methodArgs = string.Join(", ", Enumerable.Range(1, i).Select(x => $"arg{x}"));
 #>
-    protected Task InvokeWithResultNoReturnValue<<#= tArgs #>>(string name, int methodId, <#= methodParams #>, CancellationToken cancellationToken)
+    protected Task InvokeWithResultNoReturnValue<<#= tArgs #>>(MethodInvocationContext ctx, <#= methodParams #>, CancellationToken cancellationToken)
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingTask(name, methodId, cancellationToken);
-        _serializer.SerializeInvocation(writer, <#= methodArgs #>, new SerializationContext(name, methodId, messageId));
-        _writer.Write(writer.WrittenMemory);
+        var (task, messageId) = EnqueuePendingTask(ctx.MethodName, ctx.MethodId, cancellationToken);
+        _serializer.SerializeInvocation(writer, <#= methodArgs #>, new SerializationContext(ctx.MethodName, ctx.MethodId, messageId));
+        _writer.Write(new InvocationWriteContext(ctx, null, writer.WrittenMemory));
         return task;
     }
 <# } #>
@@ -46,13 +47,13 @@ public partial class RemoteProxyBase
     var methodParams = string.Join(", ", Enumerable.Range(1, i).Select(x => $"T{x} arg{x}"));
     var methodArgs = string.Join(", ", Enumerable.Range(1, i).Select(x => $"arg{x}"));
 #>
-    protected Task<TResult> InvokeWithResult<<#= tArgs #>, TResult>(string name, int methodId, <#= methodParams #>, CancellationToken cancellationToken)
+    protected Task<TResult> InvokeWithResult<<#= tArgs #>, TResult>(MethodInvocationContext ctx, <#= methodParams #>, CancellationToken cancellationToken)
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingTask<TResult>(name, methodId, cancellationToken);
-        _serializer.SerializeInvocation(writer, <#= methodArgs #>, new SerializationContext(name, methodId, messageId));
-        _writer.Write(writer.WrittenMemory);
+        var (task, messageId) = EnqueuePendingTask<TResult>(ctx.MethodName, ctx.MethodId, cancellationToken);
+        _serializer.SerializeInvocation(writer, <#= methodArgs #>, new SerializationContext(ctx.MethodName, ctx.MethodId, messageId));
+        _writer.Write(new InvocationWriteContext(ctx, messageId, writer.WrittenMemory));
         return task;
     }
 <# } #>

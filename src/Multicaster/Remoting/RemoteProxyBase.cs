@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 using Cysharp.Runtime.Multicast.Internal;
 
@@ -22,30 +23,30 @@ public abstract partial class RemoteProxyBase : IRemoteProxy
     bool IRemoteProxy.TryGetDirectWriter([NotNullWhen(true)] out IRemoteReceiverWriter? receiver)
         => (receiver = (_writer as RemoteDirectWriter)?.Writer) is not null;
 
-    protected void Invoke(string name, int methodId)
+    protected void Invoke(MethodInvocationContext ctx)
     {
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        _serializer.SerializeInvocation(writer, new SerializationContext(name, methodId, null));
-        _writer.Write(writer.WrittenMemory);
+        _serializer.SerializeInvocation(writer, new SerializationContext(ctx.MethodName, ctx.MethodId, null));
+        _writer.Write(new InvocationWriteContext(ctx, null, writer.WrittenMemory));
     }
 
-    protected Task InvokeWithResultNoReturnValue(string name, int methodId, CancellationToken timeoutCancellationToken = default)
+    protected Task InvokeWithResultNoReturnValue(MethodInvocationContext ctx, CancellationToken timeoutCancellationToken = default)
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingTask(name, methodId, timeoutCancellationToken);
-        _serializer.SerializeInvocation(writer, new SerializationContext(name, methodId, messageId));
-        _writer.Write(writer.WrittenMemory);
+        var (task, messageId) = EnqueuePendingTask(ctx.MethodName, ctx.MethodId, timeoutCancellationToken);
+        _serializer.SerializeInvocation(writer, new SerializationContext(ctx.MethodName, ctx.MethodId, messageId));
+        _writer.Write(new InvocationWriteContext(ctx, messageId, writer.WrittenMemory));
         return task;
     }
 
-    protected Task<TResult> InvokeWithResult<TResult>(string name, int methodId, CancellationToken timeoutCancellationToken = default)
+    protected Task<TResult> InvokeWithResult<TResult>(MethodInvocationContext ctx, CancellationToken timeoutCancellationToken = default)
     {
         ThrowIfNotSingleWriter();
         using var writer = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var (task, messageId) = EnqueuePendingTask<TResult>(name, methodId, timeoutCancellationToken);
-        _serializer.SerializeInvocation(writer, new SerializationContext(name, methodId, messageId));
-        _writer.Write(writer.WrittenMemory);
+        var (task, messageId) = EnqueuePendingTask<TResult>(ctx.MethodName, ctx.MethodId, timeoutCancellationToken);
+        _serializer.SerializeInvocation(writer, new SerializationContext(ctx.MethodName, ctx.MethodId, messageId));
+        _writer.Write(new InvocationWriteContext(ctx, messageId, writer.WrittenMemory));
         return task;
     }
 
@@ -94,7 +95,7 @@ public abstract partial class RemoteProxyBase : IRemoteProxy
         IRemoteClientResultPendingTaskRegistry IRemoteReceiverWriter.PendingTasks
             => NotSupportedRemoteClientResultPendingTaskRegistry.Instance;
 
-        void IRemoteReceiverWriter.Write(ReadOnlyMemory<byte> payload)
+        void IRemoteReceiverWriter.Write(InvocationWriteContext context)
         {
             foreach (var (receiverId, receiver) in _remoteReceivers)
             {
@@ -102,7 +103,7 @@ public abstract partial class RemoteProxyBase : IRemoteProxy
                 if (_targets is not null && !_targets.Contains(receiverId)) continue;
                 try
                 {
-                    receiver.Write(payload);
+                    receiver.Write(context);
                 }
                 catch
                 {
@@ -127,11 +128,11 @@ public abstract partial class RemoteProxyBase : IRemoteProxy
         IRemoteClientResultPendingTaskRegistry IRemoteReceiverWriter.PendingTasks
             => _remoteReceivers.GetValueOrDefault(_target)?.PendingTasks ?? throw new InvalidOperationException("The target is not found.");
 
-        void IRemoteReceiverWriter.Write(ReadOnlyMemory<byte> payload)
+        void IRemoteReceiverWriter.Write(InvocationWriteContext context)
         {
             try
             {
-                _remoteReceivers.GetValueOrDefault(_target)?.Write(payload);
+                _remoteReceivers.GetValueOrDefault(_target)?.Write(context);
             }
             catch
             {
@@ -151,11 +152,11 @@ public abstract partial class RemoteProxyBase : IRemoteProxy
 
         IRemoteClientResultPendingTaskRegistry IRemoteReceiverWriter.PendingTasks => Writer.PendingTasks;
 
-        void IRemoteReceiverWriter.Write(ReadOnlyMemory<byte> payload)
+        void IRemoteReceiverWriter.Write(InvocationWriteContext context)
         {
             try
             {
-                Writer.Write(payload);
+                Writer.Write(context);
             }
             catch
             {

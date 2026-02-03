@@ -48,7 +48,7 @@ public class StressTest
 
         IRemoteClientResultPendingTaskRegistry IRemoteReceiverWriter.PendingTasks => PendingTasks;
 
-        public void Write(ReadOnlyMemory<byte> payload)
+        public void Write(InvocationWriteContext context)
         {
         }
     }
