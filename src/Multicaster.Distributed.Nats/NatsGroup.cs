@@ -60,13 +60,13 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
             _messagePackSerializerOptionsForKey = messagePackSerializerOptionsForKey;
         }
 
-        public void Write(ReadOnlyMemory<byte> payload)
+        public void Write(InvocationWriteContext context)
         {
             using var bufferWriter = ArrayPoolBufferWriter.RentThreadStaticWriter();
             var writer = new MessagePackWriter(bufferWriter);
 
-            // redis-format: [[excludes], [targets], [raw-body]]
-            writer.WriteArrayHeader(3);
+            // redis-format: [[excludes], [targets], method-name, method-id, [raw-body]]
+            writer.WriteArrayHeader(4);
             MessagePackSerializer.Serialize(ref writer, _excludes, _messagePackSerializerOptionsForKey);
             if (_targets is null)
             {
@@ -76,8 +76,9 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
             {
                 MessagePackSerializer.Serialize(ref writer, _targets, _messagePackSerializerOptionsForKey);
             }
+            writer.Write(context.MethodId);
             writer.Flush();
-            bufferWriter.Write(payload.Span);
+            bufferWriter.Write(context.Payload.Span);
 
             System.Diagnostics.Debug.WriteLine($"Publish Broadcast: {System.Text.Encoding.UTF8.GetString(bufferWriter.WrittenMemory.Span)}");
             var taskPublish = _connection.PublishAsync(_subject, bufferWriter.WrittenMemory);
@@ -329,20 +330,22 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
 
         var arrayLength = reader.ReadArrayHeader();
 
-        // Broadcast: Array(3)[[Excludes], [Targets], [Message]]
+        // Broadcast: Array(4)[[Excludes], [Targets], MethodId, [Message]]
         // Remove: Array(2)[0x0, Id]
-        if (arrayLength == 3)
+        if (arrayLength == 5)
         {
             // Broadcast
             var excludes = MessagePackSerializer.Deserialize<TKey[]>(ref reader, _messagePackSerializerOptionsForKey);
             var targets = MessagePackSerializer.Deserialize<TKey[]>(ref reader, _messagePackSerializerOptionsForKey);
+            var methodId = reader.ReadInt32();
             var payload = messageBytes.AsMemory((int)reader.Consumed);
+            var context = new InvocationWriteContext(methodId, null, payload);
 
             foreach (var receiver in _receivers)
             {
                 if (excludes is not null && excludes.Contains(receiver.Key)) continue;
                 if (targets is not null && !targets.Contains(receiver.Key)) continue;
-                receiver.Value.Write(payload);
+                receiver.Value.Write(context);
             }
         }
         else if (arrayLength == 2)
