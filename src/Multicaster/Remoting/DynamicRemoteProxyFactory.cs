@@ -16,6 +16,7 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
 
     private static readonly AssemblyBuilder _assemblyBuilder;
     private static readonly ModuleBuilder _moduleBuilder;
+    private static readonly ConstructorInfo _ctorMethodInvocationContext = typeof(MethodInvocationContext).GetConstructor([typeof(string),  typeof(int)])!;
 
     static DynamicRemoteProxyFactory()
     {
@@ -65,14 +66,17 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
                     var il = methodBuilder.GetILGenerator();
 
                     il.Emit(OpCodes.Ldarg_0); // this
+
                     il.Emit(OpCodes.Ldstr, method.Name); // name
                     il.Emit(OpCodes.Ldc_I4, MethodInvokeHelper.GetMethodId(method)); // methodId
+                    il.Emit(OpCodes.Newobj, _ctorMethodInvocationContext); // new MethodInvocationContext(name, methodId);
+
                     for (var i = 0; i < method.GetParameters().Length; i++)
                     {
                         il.Emit(OpCodes.Ldarg, 1 + i);
                     }
 
-                    il.Emit(OpCodes.Callvirt, methodInvoke); // base.Invoke(method.Name, methodId, arg1, arg2 ...);
+                    il.Emit(OpCodes.Callvirt, methodInvoke); // base.Invoke(methodInvocationCtx, arg1, arg2 ...);
                     il.Emit(OpCodes.Ret);
                 }
                 else
@@ -88,8 +92,11 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
                     }
 
                     il.Emit(OpCodes.Ldarg_0); // this
+
                     il.Emit(OpCodes.Ldstr, method.Name); // name
                     il.Emit(OpCodes.Ldc_I4, MethodInvokeHelper.GetMethodId(method)); // methodId
+                    il.Emit(OpCodes.Newobj, _ctorMethodInvocationContext); // new MethodInvocationContext(name, methodId);
+
                     for (var i = 0; i < method.GetParameters().Length; i++)
                     {
                         if (cancellationTokenIndex.HasValue && cancellationTokenIndex.Value == i)
@@ -111,7 +118,7 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
                         il.Emit(OpCodes.Ldloc_S, local_ctDefault!);
                     }
 
-                    il.Emit(OpCodes.Callvirt, methodInvoke); // base.Invoke(method.Name, methodId, arg1, arg2 ...);
+                    il.Emit(OpCodes.Callvirt, methodInvoke); // base.Invoke(methodInvocationCtx, arg1, arg2 ...);
                     il.Emit(OpCodes.Ret);
                 }
             }
