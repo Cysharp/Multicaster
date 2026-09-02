@@ -7,6 +7,8 @@ using Cysharp.Runtime.Multicast.Distributed.Redis;
 using Cysharp.Runtime.Multicast.Remoting;
 
 using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Containers;
+using DotNet.Testcontainers.Images;
 using DotNet.Testcontainers.Networks;
 
 using Multicaster.Tests;
@@ -18,60 +20,51 @@ using Testcontainers.Redis;
 
 namespace Multicaster.Distributed.Redis.Tests;
 
-public class RedisGroupShardedTest : RedisGroupTestBase, IDisposable
+public class RedisGroupShardedTest : RedisGroupTestBase, IAsyncLifetime, IDisposable
 {
     private readonly CancellationTokenSource _timeoutTokenSource = new(TimeSpan.FromSeconds(60));
     private CancellationToken TimeoutToken => _timeoutTokenSource.Token;
 
-    private readonly INetwork _network;
-    // Redis Cluster requires at least three master nodes.
-    private readonly RedisContainer[] _redisContainers;
+    private IFutureDockerImage? _redisClusterImage;
+    private IContainer? _redisClusterContainer;
 
-    public RedisGroupShardedTest()
+
+    public async Task InitializeAsync()
     {
-        _network = new NetworkBuilder()
-            .WithName($"redis-cluster-network-{Guid.NewGuid()}")
+        // Create redis-cluster image from Dockerfile
+        _redisClusterImage = new ImageFromDockerfileBuilder()
+            .WithDockerfileDirectory("redis-cluster")
             .Build();
+        await _redisClusterImage.CreateAsync(TimeoutToken);
 
-        const int nodeCount = 3; // Number of Redis nodes in the cluster.
-        const int portBase = 7000; // Base port for Redis nodes in the cluster.
-        var hostIpAddress = GetHostIpAddress();
-        var nodes = string.Join(" ", Enumerable.Range(0, nodeCount)
-            .Select(x => $"redis-node-{x}:{portBase + x}"));
+        // Start redis-cluster
+        _redisClusterContainer = new ContainerBuilder()
+            .WithImage(_redisClusterImage)
+            .WithWaitStrategy(Wait.ForUnixContainer().UntilCommandIsCompleted("redis-cli", "-p", "30001", "cluster", "info"))
+            .WithWaitStrategy(Wait.ForUnixContainer().UntilCommandIsCompleted("redis-cli", "-p", "30001", "ping"))
+            .WithWaitStrategy(Wait.ForUnixContainer().UntilCommandIsCompleted("redis-cli", "-p", "30002", "ping"))
+            .WithWaitStrategy(Wait.ForUnixContainer().UntilCommandIsCompleted("redis-cli", "-p", "30003", "ping"))
+            .WithPortBinding(30001, 30001)
+            .WithPortBinding(30002, 30002)
+            .WithPortBinding(30003, 30003)
+            .Build();
+        await _redisClusterContainer.StartAsync(TimeoutToken);
 
-        _redisContainers = Enumerable.Range(0, nodeCount)
-            .Select(x =>
-            {
-                var builder = new RedisBuilder()
-                    .WithNetwork(_network)
-                    .WithHostname($"redis-node-{x}")
-                    .WithImage("public.ecr.aws/bitnami/redis-cluster:8.0")
-                    .WithEnvironment("ALLOW_EMPTY_PASSWORD", "yes")
-                    .WithEnvironment("REDIS_NODES", nodes)
-                    .WithEnvironment("REDIS_PORT_NUMBER", $"{portBase + x}")
-                    .WithEnvironment("REDIS_CLUSTER_DYNAMIC_IPS", "no")
-                    .WithEnvironment("REDIS_CLUSTER_ANNOUNCE_IP", hostIpAddress)
-                    .WithEnvironment("REDIS_CLUSTER_ANNOUNCE_PORT", $"{portBase + x}")
-                    .WithEnvironment("REDIS_CLUSTER_ANNOUNCE_BUS_PORT", $"{portBase + x + 10000}")
-                    .WithWaitStrategy(Wait.ForUnixContainer().UntilCommandIsCompleted("redis-cli", "-p", $"{portBase + x}", "ping"))
-                    .WithPortBinding(portBase + x, portBase + x)
-                    .WithPortBinding(portBase + x + 10000, portBase + x + 10000);
+        // Wait for the cluster to be ready
+        await Task.Delay(TimeSpan.FromSeconds(5));
+    }
 
-                if (x == 0)
-                {
-                    builder = builder
-                        .WithEnvironment("REDIS_CLUSTER_REPLICAS", "0")
-                        .WithEnvironment("REDIS_CLUSTER_CREATOR", "yes");
-                }
+    public async Task DisposeAsync()
+    {
+        if (_redisClusterImage is not null)
+        {
+            await _redisClusterImage.DisposeAsync();
+        }
 
-                return builder.Build();
-            })
-            .ToArray();
-
-        Task.WhenAll([
-            Task.Delay(5000), // Give some time for the Redis cluster to start
-            .._redisContainers.Select(x => x.StartAsync(TimeoutToken)),
-        ]).GetAwaiter().GetResult();
+        if (_redisClusterContainer is not null)
+        {
+            await _redisClusterContainer.DisposeAsync();
+        }
     }
 
     private static string GetHostIpAddress()
@@ -85,7 +78,7 @@ public class RedisGroupShardedTest : RedisGroupTestBase, IDisposable
     }
 
     private string GetConnectionString()
-        => $"localhost:7000,$CLUSTER="; // Disable auto-discovery, we use sharded pub/sub
+        => $"localhost:30001,$CLUSTER="; // Disable auto-discovery, we use sharded pub/sub
 
     [Fact]
     public async Task ShardingServerConnectivityTest()
@@ -325,26 +318,5 @@ public class RedisGroupShardedTest : RedisGroupTestBase, IDisposable
     public void Dispose()
     {
         _timeoutTokenSource.Dispose();
-
-        foreach (var redisContainer in _redisContainers)
-        {
-            CastAndDispose(redisContainer);
-        }
-
-        CastAndDispose(_network);
-
-        return;
-
-        static void CastAndDispose(IAsyncDisposable resource)
-        {
-            if (resource is IDisposable resourceDisposable)
-            {
-                resourceDisposable.Dispose();
-            }
-            else
-            {
-                resource.DisposeAsync().GetAwaiter().GetResult();
-            }
-        }
     }
 }
