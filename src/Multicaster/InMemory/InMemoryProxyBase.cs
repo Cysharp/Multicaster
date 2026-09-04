@@ -561,7 +561,7 @@ public abstract class InMemoryProxyBase<TKey, T>
     {
         if (_targets is not { Length: 1 })
         {
-            throw new NotSupportedException("In-memory proxy does not support to invoke multiple receivers.");
+            throw new NotSupportedException("Receiver methods with a return value (including Task and Task<T>) require a single target. Use Single to select one receiver, or use a void receiver method for broadcasting.");
         }
     }
 

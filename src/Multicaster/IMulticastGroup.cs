@@ -4,6 +4,11 @@
 /// Represents a multicast group that allows sending messages to multiple receivers based on specified inclusion or
 /// exclusion criteria.
 /// </summary>
+/// <remarks>
+/// Broadcast receiver methods must return <see langword="void"/>. Client results methods, including those returning
+/// <see cref="Task"/> without a result value, require a single target. Use <see cref="Single"/> on a transport that
+/// supports client results; <see cref="All"/> and <see cref="Except"/> cannot be used even if only one receiver remains.
+/// </remarks>
 /// <typeparam name="TKey">The type of the key used to identify receivers. Must implement <see cref="IEquatable{T}"/>.</typeparam>
 /// <typeparam name="TReceiver">The type of the receiver that messages are sent to.</typeparam>
 public interface IMulticastGroup<TKey, TReceiver>
