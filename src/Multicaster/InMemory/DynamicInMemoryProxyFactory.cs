@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -11,7 +12,22 @@ namespace Cysharp.Runtime.Multicast.InMemory;
 /// </summary>
 public class DynamicInMemoryProxyFactory : IInMemoryProxyFactory
 {
-    public static IInMemoryProxyFactory Instance { get; } = new DynamicInMemoryProxyFactory();
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DynamicInMemoryProxyFactory"/> class.
+    /// </summary>
+    [RequiresDynamicCode("Dynamic in-memory proxies use Reflection.Emit. Use a source-generated proxy factory for NativeAOT.")]
+    public DynamicInMemoryProxyFactory()
+    {
+    }
+
+    /// <summary>
+    /// Gets the singleton dynamic factory instance.
+    /// </summary>
+    public static IInMemoryProxyFactory Instance
+    {
+        [RequiresDynamicCode("Dynamic in-memory proxies use Reflection.Emit. Use a source-generated proxy factory for NativeAOT.")]
+        get;
+    } = new DynamicInMemoryProxyFactory();
 
     private static readonly AssemblyBuilder _assemblyBuilder;
     private static readonly ModuleBuilder _moduleBuilder;
@@ -22,14 +38,13 @@ public class DynamicInMemoryProxyFactory : IInMemoryProxyFactory
         _moduleBuilder = _assemblyBuilder.DefineDynamicModule("Multicaster");
     }
 
-    public T Create<TKey, T>(IReceiverHolder<TKey, T> receivers, ImmutableArray<TKey> excludes, ImmutableArray<TKey>? targets)
-        where TKey : IEquatable<TKey>
+    [RequiresDynamicCode("Dynamic in-memory proxies use Reflection.Emit. Use a source-generated proxy factory for NativeAOT.")]
+    public T Create<TKey, T>(IReceiverHolder<TKey, T> receivers, ImmutableArray<TKey> excludes, ImmutableArray<TKey>? targets) where TKey : IEquatable<TKey>
     {
         return Core<TKey, T>.Create(receivers, excludes, targets);
     }
 
-    static class Core<TKey, T>
-        where TKey : IEquatable<TKey>
+    static class Core<TKey, T> where TKey : IEquatable<TKey>
     {
         private static readonly Type _type;
         private static readonly Func<IReceiverHolder<TKey, T>, ImmutableArray<TKey>, ImmutableArray<TKey>?, T> _factory;
@@ -229,7 +244,6 @@ public class DynamicInMemoryProxyFactory : IInMemoryProxyFactory
                 .CreateDelegate<Func<IReceiverHolder<TKey, T>, ImmutableArray<TKey>, ImmutableArray<TKey>?, T>>();
         }
 
-        public static T Create(IReceiverHolder<TKey, T> receivers, ImmutableArray<TKey> excludes, ImmutableArray<TKey>? targets)
-            => _factory(receivers, excludes, targets);
+        public static T Create(IReceiverHolder<TKey, T> receivers, ImmutableArray<TKey> excludes, ImmutableArray<TKey>? targets) => _factory(receivers, excludes, targets);
     }
 }

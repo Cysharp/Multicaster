@@ -14,6 +14,20 @@ public interface IRemoteProxyFactory
     /// Creates an instance of the specified type <typeparamref name="T"/> using the provided remote receiver and serializer.
     /// </summary>
     T Create<T>(IRemoteReceiverWriter receiver, IRemoteSerializer serializer);
+
+    /// <summary>
+    /// Attempts to create a remote proxy for the specified receiver interface.
+    /// </summary>
+    /// <typeparam name="T">The receiver interface type.</typeparam>
+    /// <param name="receiver">The remote receiver writer.</param>
+    /// <param name="serializer">The remote invocation serializer.</param>
+    /// <param name="proxy">The created proxy when this method returns <see langword="true"/>.</param>
+    /// <returns><see langword="true"/> when this factory supports <typeparamref name="T"/>; otherwise, <see langword="false"/>.</returns>
+    bool TryCreate<T>(IRemoteReceiverWriter receiver, IRemoteSerializer serializer, out T proxy)
+    {
+        proxy = default!;
+        return false;
+    }
 }
 
 public static class RemoteProxyFactory
@@ -21,8 +35,7 @@ public static class RemoteProxyFactory
     public static T CreateDirect<T>(this IRemoteProxyFactory factory, IRemoteReceiverWriter receiver, IRemoteSerializer serializer)
         => factory.Create<T>(new RemoteProxyBase.RemoteDirectWriter(receiver), serializer);
 
-    public static T Create<TKey, T>(this IRemoteProxyFactory factory, ConcurrentDictionary<TKey, IRemoteReceiverWriter> receivers, IRemoteSerializer serializer)
-        where TKey : IEquatable<TKey>
+    public static T Create<TKey, T>(this IRemoteProxyFactory factory, ConcurrentDictionary<TKey, IRemoteReceiverWriter> receivers, IRemoteSerializer serializer) where TKey : IEquatable<TKey>
         => factory.Create<T>(new RemoteProxyBase.RemoteMultiWriter<TKey>(receivers, ImmutableArray<TKey>.Empty, null), serializer);
 
     public static T Except<TKey, T>(this IRemoteProxyFactory factory, ConcurrentDictionary<TKey, IRemoteReceiverWriter> receivers, ImmutableArray<TKey> excludes, IRemoteSerializer serializer)
