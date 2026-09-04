@@ -106,6 +106,32 @@ receiverA.OnMessage("DirectMessage", "Sent a message to the receiver directly.")
 [A] <DirectMessage> Sent a message to the receiver directly.
 ```
 
+### Broadcasts and client results
+
+Use receiver methods returning `void` for broadcasts through `All`, `Except`, or `Only`.
+Methods returning `Task` or `Task<T>` are client results calls: they wait for a response from a specific receiver, even when the task has no result value. Use `Single(receiverId)` to invoke these methods on transports that support client results.
+
+```csharp
+public interface IDashboardReceiver
+{
+    // Notify dashboards of a status change.
+    void OnStatusChanged(string status);
+
+    // Wait for one dashboard to finish refreshing.
+    Task RefreshAsync();
+}
+
+// Notify all dashboards.
+group.All.OnStatusChanged("Ready");
+
+// Refresh a specific dashboard and wait for completion.
+await group.Single(receiverId).RefreshAsync();
+```
+
+Calling a client results method through `All` or `Except` throws `NotSupportedException`, even if the group is empty or only one receiver remains after filtering. Merely removing `await` does not turn a `Task`-returning receiver method into a broadcast; its interface return type must be `void`.
+
+For MagicOnion, `Client` can also be used to call a client results method on the current client. See [Client Results](https://cysharp.github.io/MagicOnion/streaminghub/client-results) for its requirements and limitations.
+
 ## API
 ### `IMulticastGroupProvider` interface
 - `IMulticastAsyncGroup<TKey, TReceiver> GetOrAddGroup<TKey, TReceiver>(string name);`

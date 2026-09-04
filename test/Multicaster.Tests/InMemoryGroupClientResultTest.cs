@@ -2,11 +2,66 @@
 
 using Cysharp.Runtime.Multicast;
 using Cysharp.Runtime.Multicast.InMemory;
+using Cysharp.Runtime.Multicast.Remoting;
 
 namespace Multicaster.Tests;
 
 public class InMemoryGroupClientResultTest
 {
+    /// <summary>
+    /// Verifies that Except rejects client results, even when at most one receiver remains, but allows void broadcasts.
+    /// </summary>
+    [Theory]
+    [InlineData(false, 0)]
+    [InlineData(false, 1)]
+    [InlineData(false, 2)]
+    [InlineData(true, 0)]
+    [InlineData(true, 1)]
+    [InlineData(true, 2)]
+    public async Task Except_ClientResults_NotSupported(bool useRemoteGroupProvider, int remainingReceiverCount)
+    {
+        // Arrange
+        IMulticastGroupProvider groupProvider = useRemoteGroupProvider
+            ? new RemoteGroupProvider(DynamicInMemoryProxyFactory.Instance, DynamicRemoteProxyFactory.Instance, new TestJsonRemoteSerializer())
+            : new InMemoryGroupProvider(DynamicInMemoryProxyFactory.Instance);
+        using var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
+        var excludedReceiver = new TestInMemoryReceiver();
+        var excludedReceiverId = Guid.NewGuid();
+        group.Add(excludedReceiverId, excludedReceiver);
+        var remainingReceivers = Enumerable.Range(0, remainingReceiverCount).Select(_ => new TestInMemoryReceiver()).ToArray();
+        foreach (var receiver in remainingReceivers)
+        {
+            group.Add(Guid.NewGuid(), receiver);
+        }
+
+        var target = group.Except([excludedReceiverId]);
+        Func<Task>[] clientResultCalls =
+        [
+            () => target.ClientResult_Parameter_Zero_NoReturnValue(),
+            () => target.ClientResult_Parameter_One_NoReturnValue(1234),
+            () => target.ClientResult_Parameter_Many_NoReturnValue(1234, "Hello", true, 1234567890L),
+            () => target.ClientResult_Parameter_Zero(),
+            () => target.ClientResult_Parameter_One(1234),
+            () => target.ClientResult_Parameter_Many(1234, "Hello", true, 1234567890L),
+        ];
+
+        // Act & Assert
+        foreach (var call in clientResultCalls)
+        {
+            var exception = await Assert.ThrowsAsync<NotSupportedException>(call);
+            Assert.Contains("Task", exception.Message);
+            Assert.Contains("Single", exception.Message);
+            Assert.Contains("void", exception.Message);
+            Assert.Empty(excludedReceiver.Received);
+            Assert.All(remainingReceivers, receiver => Assert.Empty(receiver.Received));
+        }
+
+        target.Parameter_One(1234);
+        Assert.Empty(excludedReceiver.Received);
+        Assert.All(remainingReceivers, receiver =>
+            Assert.Equal([(nameof(ITestReceiver.Parameter_One), (object)1234)], receiver.Received));
+    }
+
     [Fact]
     public async Task Parameter_Zero_NoReturnValue()
     {
