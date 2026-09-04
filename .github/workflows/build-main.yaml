@@ -24,15 +24,15 @@ jobs:
       - run: dotnet retest -- -c Release --no-build
       - name: Verify packages (CodeGen)
         run: |
-        pwsh ./test/verify-packages.ps1 -PackageDirectory ./publish -Version 0.1.0
-        dotnet restore ./test/Multicaster.CodeGen.PackageFixture/Multicaster.CodeGen.PackageFixture.csproj --source ./publish
-        dotnet build ./test/Multicaster.CodeGen.PackageFixture/Multicaster.CodeGen.PackageFixture.csproj -c Release --no-restore
-        dotnet restore ./test/Multicaster.SourceGenerator.PackageFixture/Multicaster.SourceGenerator.PackageFixture.csproj --source ./publish
-        dotnet run --project ./test/Multicaster.SourceGenerator.PackageFixture/Multicaster.SourceGenerator.PackageFixture.csproj -c Release --no-restore
+          pwsh ./test/verify-packages.ps1 -PackageDirectory ./publish -Version 0.1.0
+          dotnet restore ./test/Multicaster.CodeGen.PackageFixture/Multicaster.CodeGen.PackageFixture.csproj --source ./publish
+          dotnet build ./test/Multicaster.CodeGen.PackageFixture/Multicaster.CodeGen.PackageFixture.csproj -c Release --no-restore
+          dotnet restore ./test/Multicaster.SourceGenerator.PackageFixture/Multicaster.SourceGenerator.PackageFixture.csproj --source ./publish
+          dotnet run --project ./test/Multicaster.SourceGenerator.PackageFixture/Multicaster.SourceGenerator.PackageFixture.csproj -c Release --no-restore
       - name: Run NativeAOT test
         run: |
-        dotnet publish ./test/Multicaster.NativeAotTest/Multicaster.NativeAotTest.csproj -c Release -r linux-x64 -p:IlcTreatWarningsAsErrors=true
-        ./test/Multicaster.NativeAotTest/bin/Release/net8.0/linux-x64/publish/Multicaster.NativeAotTest
+          dotnet publish ./test/Multicaster.NativeAotTest/Multicaster.NativeAotTest.csproj -c Release -r linux-x64 -p:IlcTreatWarningsAsErrors=true
+          ./test/Multicaster.NativeAotTest/bin/Release/net8.0/linux-x64/publish/Multicaster.NativeAotTest
       - uses: Cysharp/Actions/.github/actions/upload-artifact@main
         with:
           name: nuget
