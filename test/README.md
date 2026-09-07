@@ -6,7 +6,7 @@ Use the .NET 10 SDK. The regular test projects target .NET 8; the NativeAOT test
 dotnet test -c Release
 ```
 
-The projects use xUnit.net v3 package version 4.0.0 with Microsoft.Testing.Platform (MTP). The repository global.json selects the .NET 10 SDK and MTP for dotnet test. Test executables also use the MTP command-line interface. CI uses dotnet test directly because the pinned dotnet-retest version does not support this mode; automatic retries are no longer enabled.
+The projects use xUnit.net v3 package version 4.0.0 with Microsoft.Testing.Platform (MTP). The repository global.json selects the .NET 10 SDK and MTP for dotnet test. Test executables also use the MTP command-line interface. CI uses dotnet test directly; automatic retries are not enabled.
 
 To run one project or select a test class:
 
