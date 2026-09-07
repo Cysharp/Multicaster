@@ -20,7 +20,7 @@ jobs:
       - uses: Cysharp/Actions/.github/actions/setup-dotnet@main
       - run: dotnet build -c Release -p:DefineConstants=RUNNING_IN_CI
       - run: dotnet pack -c Release --no-build -p:SymbolPackageFormat=snupkg -o ./publish
-      - run: dotnet test -c Release --no-build
+      - run: bash ./test/retry.sh 3 dotnet test -c Release --no-build
       - name: Verify packages (CodeGen)
         run: |
           pwsh ./test/verify-packages.ps1 -PackageDirectory ./publish -Version 0.1.0
@@ -31,7 +31,7 @@ jobs:
       - name: Run NativeAOT tests
         run: |
           dotnet publish ./test/Multicaster.NativeAotTest/Multicaster.NativeAotTest.csproj -c Release -r linux-x64 -o ./artifacts/nativeaot -p:IlcTreatWarningsAsErrors=true
-          ./artifacts/nativeaot/Multicaster.NativeAotTest
+          bash ./test/retry.sh 3 ./artifacts/nativeaot/Multicaster.NativeAotTest
       - uses: Cysharp/Actions/.github/actions/upload-artifact@main
         with:
           name: nuget

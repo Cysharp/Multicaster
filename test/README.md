@@ -6,7 +6,15 @@ Use the .NET 10 SDK. The regular test projects target .NET 8; the NativeAOT test
 dotnet test -c Release
 ```
 
-The projects use xUnit.net v3 package version 4.0.0 with Microsoft.Testing.Platform (MTP). The repository global.json selects the .NET 10 SDK and MTP for dotnet test. Test executables also use the MTP command-line interface. CI uses dotnet test directly; automatic retries are not enabled.
+The projects use xUnit.net v3 package version 4.0.0 with Microsoft.Testing.Platform (MTP). The repository global.json selects the .NET 10 SDK and MTP for dotnet test. Test executables also use the MTP command-line interface.
+
+CI uses `test/retry.sh` to run test commands up to three times in total, waiting one second between failed attempts. The entire command is rerun, including previously passing tests. The script stops on success or a signal-related exit code (128 or higher), and returns the final command's exit code if all attempts fail. Builds, publishing, and package uploads are not retried.
+
+```sh
+bash ./test/retry.sh 3 dotnet test -c Release --no-build
+```
+
+The NativeAOT executable is retried in the same way after publishing.
 
 To run one project or select a test class:
 
