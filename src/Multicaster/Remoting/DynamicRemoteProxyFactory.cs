@@ -1,4 +1,5 @@
 ﻿using Cysharp.Runtime.Multicast.Internal;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -10,9 +11,21 @@ namespace Cysharp.Runtime.Multicast.Remoting;
 public class DynamicRemoteProxyFactory : IRemoteProxyFactory
 {
     /// <summary>
+    /// Initializes a new instance of the <see cref="DynamicRemoteProxyFactory"/> class.
+    /// </summary>
+    [RequiresDynamicCode("Dynamic remote proxies use Reflection.Emit. Use a source-generated proxy factory for NativeAOT.")]
+    public DynamicRemoteProxyFactory()
+    {
+    }
+
+    /// <summary>
     /// Gets the singleton instance of the remote proxy factory.
     /// </summary>
-    public static IRemoteProxyFactory Instance { get; } = new DynamicRemoteProxyFactory();
+    public static IRemoteProxyFactory Instance
+    {
+        [RequiresDynamicCode("Dynamic remote proxies use Reflection.Emit. Use a source-generated proxy factory for NativeAOT.")]
+        get;
+    } = new DynamicRemoteProxyFactory();
 
     private static readonly AssemblyBuilder _assemblyBuilder;
     private static readonly ModuleBuilder _moduleBuilder;
@@ -24,6 +37,7 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
     }
 
     /// <inheritdoc />
+    [RequiresDynamicCode("Dynamic remote proxies use Reflection.Emit. Use a source-generated proxy factory for NativeAOT.")]
     public T Create<T>(IRemoteReceiverWriter writer, IRemoteSerializer serializer)
     {
         return Core<T>.Create(writer, serializer);
@@ -133,12 +147,10 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
             }
             _type = typeBuilder.CreateType()!;
 
-            _factory = _type.GetMethod("CreateInstance", BindingFlags.Static | BindingFlags.NonPublic)!
-                .CreateDelegate<Func<IRemoteReceiverWriter, IRemoteSerializer, T>>();
+            _factory = _type.GetMethod("CreateInstance", BindingFlags.Static | BindingFlags.NonPublic)!.CreateDelegate<Func<IRemoteReceiverWriter, IRemoteSerializer, T>>();
         }
 
-        public static T Create(IRemoteReceiverWriter writer, IRemoteSerializer serializer)
-            => _factory(writer, serializer);
+        public static T Create(IRemoteReceiverWriter writer, IRemoteSerializer serializer) => _factory(writer, serializer);
     }
 
     static class MethodInvokeHelper
@@ -149,24 +161,17 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
 
         static MethodInvokeHelper()
         {
-            MethodInfoInvoke = typeof(RemoteProxyBase)
-                .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
-                .Where(x => x.Name == "Invoke")
+            MethodInfoInvoke = typeof(RemoteProxyBase).GetMethods(BindingFlags.NonPublic | BindingFlags.Instance).Where(x => x.Name == "Invoke")
                 .ToDictionary(k => k.GetGenericArguments().Length, v => v);
-            MethodInfoInvokeWithResult = typeof(RemoteProxyBase)
-                .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
-                .Where(x => x.Name == "InvokeWithResult")
+            MethodInfoInvokeWithResult = typeof(RemoteProxyBase).GetMethods(BindingFlags.NonPublic | BindingFlags.Instance).Where(x => x.Name == "InvokeWithResult")
                 .ToDictionary(k => k.GetGenericArguments().Length, v => v);
-            MethodInfoInvokeWithResultNoReturnValue = typeof(RemoteProxyBase)
-                .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
-                .Where(x => x.Name == "InvokeWithResultNoReturnValue")
+            MethodInfoInvokeWithResultNoReturnValue = typeof(RemoteProxyBase).GetMethods(BindingFlags.NonPublic | BindingFlags.Instance).Where(x => x.Name == "InvokeWithResultNoReturnValue")
                 .ToDictionary(k => k.GetGenericArguments().Length, v => v);
         }
 
         public static int GetMethodId(MethodInfo interfaceMethod)
         {
-            return (int?)interfaceMethod.GetCustomAttributes()
-                .Where(x => x.GetType().Name is "MethodId" or "MethodIdAttribute")
+            return (int?)interfaceMethod.GetCustomAttributes().Where(x => x.GetType().Name is "MethodId" or "MethodIdAttribute")
                 .Select(x => (Attribute: x, Field: x.GetType().GetField("MethodId"), Property: x.GetType().GetProperty("MethodId")))
                 .Where(x => x.Field is not null || x.Property is not null)
                 .Select(x => x.Field?.GetValue(x.Attribute) ?? x.Property?.GetValue(x.Attribute))
@@ -198,10 +203,7 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
                 throw new NotSupportedException($"A receiver method must have less than 15 parameters. Method '{interfaceMethod.Name}' has {parameters.Length} parameters.");
             }
 
-            var clientResultCancellationParams = parameters
-                .Select((x, i) => (ParameterInfo: x, Index: i))
-                .Where(x => x.ParameterInfo.ParameterType == typeof(CancellationToken))
-                .ToArray();
+            var clientResultCancellationParams = parameters.Select((x, i) => (ParameterInfo: x, Index: i)).Where(x => x.ParameterInfo.ParameterType == typeof(CancellationToken)).ToArray();
 
             var cancellationTokenIndex = default(int?);
             if (clientResultCancellationParams.Any())
@@ -213,9 +215,7 @@ public class DynamicRemoteProxyFactory : IRemoteProxyFactory
                 }
 
                 cancellationTokenIndex = clientResultCancellationParams.Select(x => x.Index).First();
-                parameters = parameters
-                    .Where(x => x.ParameterType != typeof(CancellationToken))
-                    .ToArray();
+                parameters = parameters.Where(x => x.ParameterType != typeof(CancellationToken)).ToArray();
             }
 
             var isGenericTaskOrValueTask = interfaceMethod.ReturnType.IsConstructedGenericType;

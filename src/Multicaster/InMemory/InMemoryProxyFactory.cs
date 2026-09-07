@@ -7,73 +7,71 @@ namespace Cysharp.Runtime.Multicast.InMemory;
 
 public interface IInMemoryProxyFactory
 {
-    T Create<TKey, T>(IReceiverHolder<TKey, T> receivers, ImmutableArray<TKey> excludes, ImmutableArray<TKey>? targets)
-        where TKey : IEquatable<TKey>;
+    T Create<TKey, T>(IReceiverHolder<TKey, T> receivers, ImmutableArray<TKey> excludes, ImmutableArray<TKey>? targets) where TKey : IEquatable<TKey>;
+
+    /// <summary>
+    /// Attempts to create an in-memory proxy for the specified receiver interface.
+    /// </summary>
+    /// <typeparam name="TKey">The receiver key type.</typeparam>
+    /// <typeparam name="T">The receiver interface type.</typeparam>
+    /// <param name="receivers">The receiver holder.</param>
+    /// <param name="excludes">Keys excluded from invocation.</param>
+    /// <param name="targets">Keys explicitly targeted by invocation, or <see langword="null"/> for all receivers.</param>
+    /// <param name="proxy">The created proxy when this method returns <see langword="true"/>.</param>
+    /// <returns><see langword="true"/> when this factory supports <typeparamref name="T"/>; otherwise, <see langword="false"/>.</returns>
+    bool TryCreate<TKey, T>(IReceiverHolder<TKey, T> receivers, ImmutableArray<TKey> excludes, ImmutableArray<TKey>? targets, out T proxy) where TKey : IEquatable<TKey>
+    {
+        proxy = default!;
+        return false;
+    }
 }
 
 public static class InMemoryProxyFactory
 {
-    public static T Create<TKey, T>(this IInMemoryProxyFactory proxyFactory, IReceiverHolder<TKey, T> receivers)
-        where TKey : IEquatable<TKey>
+    public static T Create<TKey, T>(this IInMemoryProxyFactory proxyFactory, IReceiverHolder<TKey, T> receivers) where TKey : IEquatable<TKey>
         => proxyFactory.Create(receivers, ImmutableArray<TKey>.Empty, null);
 
-    public static T Except<TKey, T>(this IInMemoryProxyFactory proxyFactory, IReceiverHolder<TKey, T> receivers, ImmutableArray<TKey> excludes)
-        where TKey : IEquatable<TKey>
+    public static T Except<TKey, T>(this IInMemoryProxyFactory proxyFactory, IReceiverHolder<TKey, T> receivers, ImmutableArray<TKey> excludes) where TKey : IEquatable<TKey>
         => proxyFactory.Create(receivers, excludes, null);
 
-    public static T Only<TKey, T>(this IInMemoryProxyFactory proxyFactory, IReceiverHolder<TKey, T> receivers, ImmutableArray<TKey> targets)
-        where TKey : IEquatable<TKey>
+    public static T Only<TKey, T>(this IInMemoryProxyFactory proxyFactory, IReceiverHolder<TKey, T> receivers, ImmutableArray<TKey> targets) where TKey : IEquatable<TKey>
         => proxyFactory.Create(receivers, ImmutableArray<TKey>.Empty, targets);
 }
 
-public interface IReceiverHolder<TKey, T>
-    where TKey : IEquatable<TKey>
+public interface IReceiverHolder<TKey, T> where TKey : IEquatable<TKey>
 {
     ReceiversSnapshot<ReceiverRegistration<TKey, T>> AsSnapshot();
 }
 
 public static class ReceiverHolder
 {
-    public static ImmutableReceiverHolder<TKey, T> CreateImmutable<TKey, T>(IEnumerable<T> receivers)
-        where TKey : IEquatable<TKey>
-        => new(receivers);
+    public static ImmutableReceiverHolder<TKey, T> CreateImmutable<TKey, T>(IEnumerable<T> receivers) where TKey : IEquatable<TKey> => new(receivers);
 
-    public static ImmutableReceiverHolder<TKey, T> CreateImmutable<TKey, T>(T receiver1, T receiver2)
-        where TKey : IEquatable<TKey>
-        => new(receiver1, receiver2);
+    public static ImmutableReceiverHolder<TKey, T> CreateImmutable<TKey, T>(T receiver1, T receiver2) where TKey : IEquatable<TKey> => new(receiver1, receiver2);
 
-    public static MutableReceiverHolder<TKey, T> CreateMutable<TKey, T>()
-        where TKey : IEquatable<TKey>
-        => new();
+    public static MutableReceiverHolder<TKey, T> CreateMutable<TKey, T>() where TKey : IEquatable<TKey> => new();
 
-    public static MutableReceiverHolder<TKey, T> CreateMutableWithInitialReceivers<TKey, T>(IEnumerable<(TKey, T)> receivers)
-        where TKey : IEquatable<TKey>
-        => new(receivers);
+    public static MutableReceiverHolder<TKey, T> CreateMutableWithInitialReceivers<TKey, T>(IEnumerable<(TKey, T)> receivers) where TKey : IEquatable<TKey> => new(receivers);
 }
 
-public readonly record struct ReceiverRegistration<TKey, T>(TKey? Key, T Receiver, bool HasKey)
-    where TKey : IEquatable<TKey>;
+public readonly record struct ReceiverRegistration<TKey, T>(TKey? Key, T Receiver, bool HasKey) where TKey : IEquatable<TKey>;
 
-public class ImmutableReceiverHolder<TKey, T> : IReceiverHolder<TKey, T>
-    where TKey : IEquatable<TKey>
+public class ImmutableReceiverHolder<TKey, T> : IReceiverHolder<TKey, T> where TKey : IEquatable<TKey>
 {
     private readonly ReceiverRegistration<TKey, T>[] _receivers;
 
-    public ReceiversSnapshot<ReceiverRegistration<TKey, T>> AsSnapshot()
-        => new(_receivers.AsSpan(), static _ => { }, default);
+    public ReceiversSnapshot<ReceiverRegistration<TKey, T>> AsSnapshot() => new(_receivers.AsSpan(), static _ => { }, default);
 
     public ImmutableReceiverHolder(IEnumerable<(TKey Key, T Receiver)> receivers)
         => _receivers = receivers.Select(x => new ReceiverRegistration<TKey, T>(x.Key, x.Receiver, HasKey: true)).ToArray();
 
-    public ImmutableReceiverHolder(IEnumerable<T> receivers)
-        => _receivers = receivers.Select(x => new ReceiverRegistration<TKey, T>(default, x, HasKey: false)).ToArray();
+    public ImmutableReceiverHolder(IEnumerable<T> receivers) => _receivers = receivers.Select(x => new ReceiverRegistration<TKey, T>(default, x, HasKey: false)).ToArray();
 
     public ImmutableReceiverHolder(T receiver1, T receiver2)
         => _receivers = [new ReceiverRegistration<TKey, T>(default, receiver1, HasKey: false), new ReceiverRegistration<TKey, T>(default, receiver2, HasKey: false)];
 }
 
-public class MutableReceiverHolder<TKey, T> : IReceiverHolder<TKey, T>
-    where TKey : IEquatable<TKey>
+public class MutableReceiverHolder<TKey, T> : IReceiverHolder<TKey, T> where TKey : IEquatable<TKey>
 {
     private readonly List<ReceiverRegistration<TKey, T>> _receivers = new();
     private readonly ReaderWriterLockSlim _lock = new();

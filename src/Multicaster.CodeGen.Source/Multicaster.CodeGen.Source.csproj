@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <PackageId>Multicaster.CodeGen.Source</PackageId>
+    <Description>Source-only receiver proxy model, validation, and emitters for Multicaster source generator integrations.</Description>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <IncludeSymbols>false</IncludeSymbols>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="CodeGen\**\*.cs"
+          Pack="true"
+          PackagePath="contentFiles\cs\any\Cysharp.Runtime.Multicast.CodeGen\%(RecursiveDir)%(Filename)%(Extension)"
+          PackageCopyToOutput="false"
+          PackageFlatten="false"
+          BuildAction="Compile" />
+  </ItemGroup>
+</Project>

@@ -155,6 +155,48 @@ For MagicOnion, `Client` can also be used to call a client results method on the
 - `void Remove(TKey key);`
 - `int Count();`
 
+## NativeAOT and source-generated proxies
+
+For NativeAOT, reference `Multicaster.SourceGenerator` and declare receiver interfaces on a partial class:
+
+```xml
+<PackageReference Include="Multicaster" Version="x.y.z" />
+<PackageReference Include="Multicaster.SourceGenerator" Version="x.y.z" PrivateAssets="all" />
+```
+
+```csharp
+[MulticasterGeneration(typeof(IGreeterReceiver))]
+public partial class MulticasterGenerated
+{
+}
+
+var groupProvider = new InMemoryGroupProvider(MulticasterGenerated.InMemoryProxyFactory);
+```
+
+The generator adds `InMemoryProxyFactory` and `RemoteProxyFactory`. The class must be top-level, non-generic, and not file-local.
+
+Combine factories from multiple assemblies with composite factories:
+
+```csharp
+var inMemoryFactory = new CompositeInMemoryProxyFactory(
+    [FeatureA.InMemoryProxyFactory, FeatureB.InMemoryProxyFactory]);
+
+var remoteFactory = new CompositeRemoteProxyFactory(
+    [FeatureA.RemoteProxyFactory, FeatureB.RemoteProxyFactory]);
+```
+
+Composite factories try each candidate's `TryCreate` in order. Optional dynamic fallbacks are supported only in JIT applications, not NativeAOT.
+
+### Reusing code generation
+
+Custom source generators can embed Multicaster's Roslyn-independent model, validation, method-ID calculation, and emitter using the source-only package (requires C# 11+):
+
+```xml
+<PackageReference Include="Multicaster.CodeGen.Source" Version="x.y.z" PrivateAssets="all" />
+```
+
+Adapters must use fully qualified, closed type names, normalize `dynamic` to `object`, and set `ReceiverMethodDefinition.DeclaringTypeName` for inherited methods (defaults to the receiver root). Each inherited method needs a distinct method ID; named `MethodId` arguments take precedence over constructor arguments.
+
 ## Transports and supported features
 
 | Transport | Multicast | Synchronous | Count/CountAsync | Client Results |

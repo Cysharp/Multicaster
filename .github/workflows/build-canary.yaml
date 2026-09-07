@@ -29,11 +29,11 @@ jobs:
       - run: echo "MULTICASTER_VERSION=${MULTICASTER_VERSION}"
       - run: dotnet tool restore
       - run: dotnet build -c Release -p:DefineConstants=RUNNING_IN_CI -p:VersionSuffix=${MULTICASTER_VERSION}
-      - run: dotnet pack -c Release --no-build -p:VersionSuffix=${MULTICASTER_VERSION} -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg -o ./publish
+      - run: dotnet pack -c Release --no-build -p:VersionSuffix=${MULTICASTER_VERSION} -p:SymbolPackageFormat=snupkg -o ./publish
       - uses: Cysharp/Actions/.github/actions/upload-artifact@main
         with:
           name: nuget
-          path: ./publish
+          path: ./publish/
           retention-days: 1
 
   canary-push:
