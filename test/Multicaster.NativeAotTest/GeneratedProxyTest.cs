@@ -1,4 +1,5 @@
 using System.Buffers;
+using Xunit;
 using System.Collections.Immutable;
 
 using Cysharp.Runtime.Multicast;
@@ -65,9 +66,12 @@ internal sealed class NativeAotReceiver : INativeAotReceiver
     Task<string> IStringResultReceiver.QueryAsync() => Task.FromResult("AOT result");
 }
 
-internal static class Program
+/// <summary>Verifies generated proxies in a NativeAOT executable.</summary>
+public class GeneratedProxyTest
 {
-    public static async Task Main()
+    /// <summary>Verifies filtering and inherited method dispatch for in-memory proxies.</summary>
+    [Fact]
+    public async Task InMemoryProxyDispatch()
     {
         var firstId = Guid.NewGuid();
         var secondId = Guid.NewGuid();
@@ -79,17 +83,22 @@ internal static class Program
         NativeAotGeneratedMulticaster.InMemoryProxyFactory.Only(holder, ImmutableArray.Create(firstId)).Notify(2);
         NativeAotGeneratedMulticaster.InMemoryProxyFactory.Except(holder, ImmutableArray.Create(firstId)).Notify(3);
 
-        Ensure(first.Notifications.SequenceEqual([1, 2]), "Generated in-memory Only behavior differs.");
-        Ensure(second.Notifications.SequenceEqual([1, 3]), "Generated in-memory Except behavior differs.");
+        Assert.Equal([1, 2], first.Notifications);
+        Assert.Equal([1, 3], second.Notifications);
 
         var single = NativeAotGeneratedMulticaster.InMemoryProxyFactory.Only(holder, ImmutableArray.Create(firstId));
         single.SendDynamic(7);
         single.TKey();
-        Ensure(Equals(first.LastDynamicValue, 7) && second.LastDynamicValue is null, "Dynamic argument was not dispatched statically.");
-        Ensure(first.KeyCalled && !second.KeyCalled, "Receiver method conflicts with generated type parameter.");
-        Ensure(await ((IIntResultReceiver)single).QueryAsync() == 42, "Inherited integer method was not dispatched.");
-        Ensure(await ((IStringResultReceiver)single).QueryAsync() == "AOT result", "Inherited string method was not dispatched.");
+        Assert.True(Equals(first.LastDynamicValue, 7) && second.LastDynamicValue is null, "Dynamic argument was not dispatched statically.");
+        Assert.True(first.KeyCalled && !second.KeyCalled, "Receiver method conflicts with generated type parameter.");
+        Assert.Equal(42, await ((IIntResultReceiver)single).QueryAsync());
+        Assert.Equal("AOT result", await ((IStringResultReceiver)single).QueryAsync());
+    }
 
+    /// <summary>Verifies remote invocations and typed client results.</summary>
+    [Fact]
+    public async Task RemoteProxyDispatch()
+    {
         using var pendingTasks = new RemoteClientResultPendingTaskRegistry();
         var serializer = new NativeAotSerializer();
         var writer = new CompletingRemoteWriter(serializer, pendingTasks);
@@ -99,22 +108,13 @@ internal static class Program
         await remote.AcknowledgeAsync("AOT", CancellationToken.None);
         var result = await remote.QueryAsync(5);
 
-        Ensure(writer.WriteCount == 3, "Generated remote proxy did not write every invocation.");
-        Ensure(result == 42, "Generated remote Task<T> client-result path failed.");
+        Assert.Equal(3, writer.WriteCount);
+        Assert.Equal(42, result);
         remote.SendDynamic(8);
-        Ensure(await ((IIntResultReceiver)remote).QueryAsync() == 42 && serializer.LastContext.MethodId == 201, "Remote inherited integer method used the wrong ID or result type.");
-        Ensure(await ((IStringResultReceiver)remote).QueryAsync() == "AOT result" && serializer.LastContext.MethodId == 202,
+        Assert.True(await ((IIntResultReceiver)remote).QueryAsync() == 42 && serializer.LastContext.MethodId == 201, "Remote inherited integer method used the wrong ID or result type.");
+        Assert.True(await ((IStringResultReceiver)remote).QueryAsync() == "AOT result" && serializer.LastContext.MethodId == 202,
             "Remote inherited string method used the wrong ID or result type.");
-        Ensure(writer.WriteCount == 6, "Additional remote regression invocations were not written.");
-        Console.WriteLine("Multicaster NativeAOT smoke test passed.");
-    }
-
-    private static void Ensure(bool condition, string message)
-    {
-        if (!condition)
-        {
-            throw new InvalidOperationException(message);
-        }
+        Assert.Equal(6, writer.WriteCount);
     }
 }
 

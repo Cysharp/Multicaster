@@ -27,7 +27,6 @@ jobs:
       - uses: Cysharp/Actions/.github/actions/setup-dotnet@main
       - run: echo "MULTICASTER_VERSION=ci-${GITHUB_REF_NAME//\//-}-$(date '+%Y%m%d-%H%M%S')+${GITHUB_SHA:0:6}" >> $GITHUB_ENV
       - run: echo "MULTICASTER_VERSION=${MULTICASTER_VERSION}"
-      - run: dotnet tool restore
       - run: dotnet build -c Release -p:DefineConstants=RUNNING_IN_CI -p:VersionSuffix=${MULTICASTER_VERSION}
       - run: dotnet pack -c Release --no-build -p:VersionSuffix=${MULTICASTER_VERSION} -p:SymbolPackageFormat=snupkg -o ./publish
       - uses: Cysharp/Actions/.github/actions/upload-artifact@main

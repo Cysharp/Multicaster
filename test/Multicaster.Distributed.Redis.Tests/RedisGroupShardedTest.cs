@@ -29,7 +29,8 @@ public class RedisGroupShardedTest : RedisGroupTestBase, IAsyncLifetime, IDispos
     private IContainer? _redisClusterContainer;
 
 
-    public async Task InitializeAsync()
+    /// <inheritdoc />
+    public async ValueTask InitializeAsync()
     {
         // Create redis-cluster image from Dockerfile
         _redisClusterImage = new ImageFromDockerfileBuilder()
@@ -54,7 +55,8 @@ public class RedisGroupShardedTest : RedisGroupTestBase, IAsyncLifetime, IDispos
         await Task.Delay(TimeSpan.FromSeconds(5));
     }
 
-    public async Task DisposeAsync()
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
     {
         if (_redisClusterImage is not null)
         {
@@ -65,6 +67,8 @@ public class RedisGroupShardedTest : RedisGroupTestBase, IAsyncLifetime, IDispos
         {
             await _redisClusterContainer.DisposeAsync();
         }
+
+        Dispose();
     }
 
     private static string GetHostIpAddress()

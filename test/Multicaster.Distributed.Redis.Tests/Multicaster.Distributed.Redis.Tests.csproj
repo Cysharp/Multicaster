@@ -4,6 +4,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsTestProject>true</IsTestProject>
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\src\Multicaster\Internal\FNV1A32.cs" Link="FNV1A32.cs" />
@@ -12,11 +14,9 @@
     <Compile Include="..\Multicaster.Tests\TestRemoteReceiverWriter.cs" Link="TestRemoteReceiverWriter.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="coverlet.collector" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="coverlet.MTP" />
     <PackageReference Include="Testcontainers.Redis" />
-    <PackageReference Include="xunit" />
-    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="xunit.v3" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Multicaster.Distributed.Redis\Multicaster.Distributed.Redis.csproj" />

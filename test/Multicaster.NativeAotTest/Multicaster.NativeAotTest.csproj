@@ -1,14 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <IsTestProject>true</IsTestProject>
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
     <PublishAot>true</PublishAot>
     <PublishTrimmed>true</PublishTrimmed>
     <IsAotCompatible>true</IsAotCompatible>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit.v3.aot" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Multicaster\Multicaster.csproj" />
     <ProjectReference Include="..\..\src\Multicaster.SourceGenerator\Multicaster.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
