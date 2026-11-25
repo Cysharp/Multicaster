@@ -1,10 +1,9 @@
 ﻿using System.Collections.Concurrent;
 
+using Cysharp.Runtime.Multicast.Internal;
 using Cysharp.Runtime.Multicast.Remoting;
 
 using MessagePack;
-using MessagePack.Formatters;
-using MessagePack.Resolvers;
 
 using Microsoft.Extensions.Options;
 
@@ -70,10 +69,7 @@ public class RedisGroupProvider : IMulticastGroupProvider, IDisposable
         _prefix = options.Prefix;
         _channelFactory = options.ChannelFactory;
 
-        var messagePackSerializerOptions = (options.MessagePackSerializerOptionsForKey ?? MessagePackSerializer.DefaultOptions);
-        _messagePackSerializerOptionsForKey = messagePackSerializerOptions.WithResolver(
-            CompositeResolver.Create([NativeGuidFormatter.Instance], [messagePackSerializerOptions.Resolver])
-        );
+        _messagePackSerializerOptionsForKey = DistributedGroupMessage.GetKeyOptions(options.MessagePackSerializerOptionsForKey);
     }
 
     /// <inheritdoc />

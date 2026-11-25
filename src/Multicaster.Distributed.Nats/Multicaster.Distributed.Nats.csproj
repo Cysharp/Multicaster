@@ -13,6 +13,7 @@
     <RootNamespace>Cysharp.Runtime.Multicast.Distributed.Nats</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\Multicaster.Distributed.Shared\DistributedGroupMessage.cs" Link="Internal\DistributedGroupMessage.cs" />
     <Compile Include="..\Multicaster\Internal\ThreadStaticArrayBufferWriter.cs" Link="Internal\ThreadStaticArrayBufferWriter.cs" />
   </ItemGroup>
   <ItemGroup>

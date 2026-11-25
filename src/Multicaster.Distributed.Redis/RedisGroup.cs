@@ -1,5 +1,4 @@
-﻿using System.Buffers;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using Cysharp.Runtime.Multicast.Internal;
 using Cysharp.Runtime.Multicast.Remoting;
@@ -63,22 +62,7 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
         public void Write(ReadOnlyMemory<byte> payload)
         {
             using var bufferWriter = ArrayPoolBufferWriter.RentThreadStaticWriter();
-            var writer = new MessagePackWriter(bufferWriter);
-
-            // Redis-format: [[excludes], [targets], [raw-body]]
-            writer.WriteArrayHeader(3);
-
-            MessagePackSerializer.Serialize(ref writer, _excludes, _optionsForKey);
-            if (_targets is null)
-            {
-                writer.WriteNil();
-            }
-            else
-            {
-                MessagePackSerializer.Serialize(ref writer,  _targets.Value, _optionsForKey);
-            }
-            writer.Flush();
-            bufferWriter.Write(payload.Span);
+            DistributedGroupMessage.WriteBroadcast(bufferWriter, _excludes, _targets, payload, _optionsForKey);
 
             _subscriber.Publish(_channel, bufferWriter.WrittenMemory);
         }
@@ -121,7 +105,7 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
     private Task HandleMessageCoreAsync(ChannelMessage message, bool isSynchronous)
     {
         var messageBytes = (byte[])message.Message!;
-        var reader = new MessagePackReader(messageBytes);
+        using var reader = new DistributedGroupMessage.Reader(messageBytes, _messagePackSerializerOptionsForKey);
 
         var arrayLength = reader.ReadArrayHeader();
 
@@ -130,9 +114,9 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
         if (arrayLength == 3)
         {
             // Broadcast
-            var excludes = MessagePackSerializer.Deserialize<TKey[]>(ref reader, _messagePackSerializerOptionsForKey);
-            var targets = MessagePackSerializer.Deserialize<TKey[]>(ref reader, _messagePackSerializerOptionsForKey);
-            var payload = messageBytes.AsMemory((int)reader.Consumed);
+            var excludes = reader.Deserialize<TKey[]>();
+            var targets = reader.Deserialize<TKey[]>();
+            var payload = reader.Remaining;
 
             foreach (var receiver in _receivers)
             {
@@ -141,11 +125,8 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
                 receiver.Value.Write(payload);
             }
         }
-        else if (arrayLength == 2)
+        else if (arrayLength == 2 && reader.TryReadRemoveKey<TKey>(out var key))
         {
-            // Remove
-            var type = reader.ReadByte();
-            var key = MessagePackSerializer.Deserialize<TKey>(ref reader, _messagePackSerializerOptionsForKey);
             if (isSynchronous)
             {
                 TryRemoveCore(key);
@@ -166,17 +147,7 @@ internal class RedisGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSy
     }
 
     private byte[] BuildRemoveMessage(TKey key)
-    {
-        using var bufferWriter = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var writer = new MessagePackWriter(bufferWriter);
-
-        // Format: [0x0, Key]
-        writer.WriteArrayHeader(2);
-        writer.Write(0x0);
-        MessagePackSerializer.Serialize(ref writer, key, _messagePackSerializerOptionsForKey);
-        writer.Flush();
-        return bufferWriter.WrittenMemory.ToArray();
-    }
+        => DistributedGroupMessage.WriteRemove(key, _messagePackSerializerOptionsForKey);
 
     public async ValueTask AddAsync(TKey key, T receiver, CancellationToken cancellationToken = default)
     {

@@ -1,12 +1,12 @@
 # Running tests
 
-Use the .NET 10 SDK. The regular test projects target .NET 8; the NativeAOT test project targets .NET 10. Redis and NATS integration tests also require Docker.
+Use the .NET 11 SDK. The regular test projects target .NET 8; the NativeAOT test project targets .NET 10. Redis and NATS integration tests also require Docker.
 
 ```sh
 dotnet test -c Release
 ```
 
-The projects use xUnit.net v3 package version 4.0.0 with Microsoft.Testing.Platform (MTP). The repository global.json selects the .NET 10 SDK and MTP for dotnet test. Test executables also use the MTP command-line interface.
+The projects use xUnit.net v3 package version 4.0.0 with Microsoft.Testing.Platform (MTP). The repository global.json selects the .NET 11 SDK and MTP for dotnet test. Test executables also use the MTP command-line interface.
 
 CI uses `test/retry.sh` to run test commands up to three times in total, waiting one second between failed attempts. The entire command is rerun, including previously passing tests. The script stops on success or a signal-related exit code (128 or higher), and returns the final command's exit code if all attempts fail. Builds, publishing, and package uploads are not retried.
 
