@@ -10,3 +10,8 @@ jobs:
       contents: read
       pull-requests: read
     uses: Cysharp/Actions/.github/workflows/pr-harness.yaml@main
+    with:
+      # Build-Main restores these fixtures from the packages it builds.
+      exclude-license-input-paths: |
+        test/Multicaster.CodeGen.PackageFixture/Multicaster.CodeGen.PackageFixture.csproj
+        test/Multicaster.SourceGenerator.PackageFixture/Multicaster.SourceGenerator.PackageFixture.csproj

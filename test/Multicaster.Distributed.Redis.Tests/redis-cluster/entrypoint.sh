@@ -5,20 +5,25 @@ echo "Starting Redis Cluster..."
 
 /usr/local/bin/create-cluster start
 
+ports=(30001 30002 30003)
+nodes=()
+
+# Wait for the Redis processes before assigning slots.
+for port in "${ports[@]}"; do
+  until redis-cli -p "$port" ping 2>/dev/null | grep -qx 'PONG'; do
+    sleep 0.1
+  done
+  nodes+=("127.0.0.1:$port")
+done
+
 echo "Creating Redis Cluster..."
-yes yes | /usr/local/bin/create-cluster create
+redis-cli --cluster create "${nodes[@]}" --cluster-replicas 0 --cluster-yes
 
-echo "Cluster status:"
-redis-cli -p 30001 cluster info
-echo "Cluster nodes:"
-redis-cli -p 30001 cluster nodes
-echo "Cluster slots:"
-redis-cli -p 30001 cluster slots
-
-until redis-cli -p 30001 cluster info | grep -q '^cluster_state:ok'; do
-  echo "Redis Cluster is not ready yet:"
-  redis-cli -p 30001 cluster info || true
-  sleep 1
+# Every node must see all slots as ready before clients connect.
+for port in "${ports[@]}"; do
+  until redis-cli -p "$port" cluster info | grep -q '^cluster_state:ok'; do
+    sleep 0.1
+  done
 done
 
 echo "Redis Cluster is ready."
