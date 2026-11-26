@@ -1,5 +1,4 @@
-﻿using System.Buffers;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using Cysharp.Runtime.Multicast.Internal;
 using Cysharp.Runtime.Multicast.Remoting;
@@ -63,21 +62,7 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
         public void Write(ReadOnlyMemory<byte> payload)
         {
             using var bufferWriter = ArrayPoolBufferWriter.RentThreadStaticWriter();
-            var writer = new MessagePackWriter(bufferWriter);
-
-            // redis-format: [[excludes], [targets], [raw-body]]
-            writer.WriteArrayHeader(3);
-            MessagePackSerializer.Serialize(ref writer, _excludes, _messagePackSerializerOptionsForKey);
-            if (_targets is null)
-            {
-                writer.WriteNil();
-            }
-            else
-            {
-                MessagePackSerializer.Serialize(ref writer, _targets, _messagePackSerializerOptionsForKey);
-            }
-            writer.Flush();
-            bufferWriter.Write(payload.Span);
+            DistributedGroupMessage.WriteBroadcast(bufferWriter, _excludes, _targets, payload, _messagePackSerializerOptionsForKey);
 
             System.Diagnostics.Debug.WriteLine($"Publish Broadcast: {System.Text.Encoding.UTF8.GetString(bufferWriter.WrittenMemory.Span)}");
             var taskPublish = _connection.PublishAsync(_subject, bufferWriter.WrittenMemory);
@@ -325,7 +310,7 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
 
     private ValueTask HandleMessageAsync(byte[] messageBytes)
     {
-        var reader = new MessagePackReader(messageBytes);
+        using var reader = new DistributedGroupMessage.Reader(messageBytes, _messagePackSerializerOptionsForKey);
 
         var arrayLength = reader.ReadArrayHeader();
 
@@ -334,9 +319,9 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
         if (arrayLength == 3)
         {
             // Broadcast
-            var excludes = MessagePackSerializer.Deserialize<TKey[]>(ref reader, _messagePackSerializerOptionsForKey);
-            var targets = MessagePackSerializer.Deserialize<TKey[]>(ref reader, _messagePackSerializerOptionsForKey);
-            var payload = messageBytes.AsMemory((int)reader.Consumed);
+            var excludes = reader.Deserialize<TKey[]>();
+            var targets = reader.Deserialize<TKey[]>();
+            var payload = reader.Remaining;
 
             foreach (var receiver in _receivers)
             {
@@ -345,11 +330,8 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
                 receiver.Value.Write(payload);
             }
         }
-        else if (arrayLength == 2)
+        else if (arrayLength == 2 && reader.TryReadRemoveKey<TKey>(out var key))
         {
-            // Remove
-            var type = reader.ReadByte();
-            var key = MessagePackSerializer.Deserialize<TKey>(ref reader, _messagePackSerializerOptionsForKey);
             return AwaitTryRemoveCore(key);
         }
 
@@ -362,17 +344,7 @@ internal class NatsGroup<TKey, T> : IMulticastAsyncGroup<TKey, T>, IMulticastSyn
     }
 
     private byte[] BuildRemoveMessage(TKey key)
-    {
-        using var bufferWriter = ArrayPoolBufferWriter.RentThreadStaticWriter();
-        var writer = new MessagePackWriter(bufferWriter);
-
-        // Format: [0x0, Key]
-        writer.WriteArrayHeader(2);
-        writer.Write(0x0);
-        MessagePackSerializer.Serialize(ref writer, key, _messagePackSerializerOptionsForKey);
-        writer.Flush();
-        return bufferWriter.WrittenMemory.ToArray();
-    }
+        => DistributedGroupMessage.WriteRemove(key, _messagePackSerializerOptionsForKey);
 
     private void ThrowIfDisposed()
     {

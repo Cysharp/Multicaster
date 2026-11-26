@@ -1,9 +1,8 @@
 ﻿using System.Collections.Concurrent;
+using Cysharp.Runtime.Multicast.Internal;
 using Cysharp.Runtime.Multicast.Remoting;
 
 using MessagePack;
-using MessagePack.Formatters;
-using MessagePack.Resolvers;
 
 using Microsoft.Extensions.Options;
 using NATS.Client.Core;
@@ -37,10 +36,7 @@ public class NatsGroupProvider : IMulticastGroupProvider
         _proxyFactory = proxyFactory;
         _serializer = serializer;
 
-        var messagePackSerializerOptions = (options.MessagePackSerializerOptionsForKey ?? MessagePackSerializer.DefaultOptions);
-        _messagePackSerializerOptionsForKey = messagePackSerializerOptions.WithResolver(
-            CompositeResolver.Create([NativeGuidFormatter.Instance], [messagePackSerializerOptions.Resolver])
-        );
+        _messagePackSerializerOptionsForKey = DistributedGroupMessage.GetKeyOptions(options.MessagePackSerializerOptionsForKey);
     }
 
     /// <inheritdoc />
@@ -71,7 +67,9 @@ public class NatsGroupOptions
     public string Url { get; set; } = "nats://localhost:4222";
 
     /// <summary>
-    /// Gets or sets a MessagePackSerializerOptions used for serializing the key.
+    /// Gets or sets the MessagePack options used to serialize group keys.
+    /// The default options write GUIDs in the native binary format.
+    /// A custom resolver controls the key format, including how GUIDs are written.
     /// </summary>
-    public MessagePackSerializerOptions MessagePackSerializerOptionsForKey { get; set; } = MessagePackSerializer.DefaultOptions;
+    public MessagePackSerializerOptions MessagePackSerializerOptionsForKey { get; set; } = DistributedGroupMessage.DefaultKeyOptions;
 }

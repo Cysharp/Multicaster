@@ -27,7 +27,9 @@ public class RedisGroupOptions
     public string? Prefix { get; set; }
 
     /// <summary>
-    /// Gets or sets a MessagePackSerializerOptions used for serializing the key.
+    /// Gets or sets the MessagePack options used to serialize group keys.
+    /// The default options write GUIDs in the native binary format.
+    /// A custom resolver controls the key format, including how GUIDs are written.
     /// </summary>
     public MessagePackSerializerOptions? MessagePackSerializerOptionsForKey { get; set; }
 
