@@ -19,6 +19,22 @@ class TestRemoteReceiverWriter :IRemoteReceiverWriter
 
     public void Write(ReadOnlyMemory<byte> payload)
     {
-        Written.Add(Encoding.UTF8.GetString(payload.Span));
+        lock (Written)
+        {
+            Written.Add(Encoding.UTF8.GetString(payload.Span));
+        }
+    }
+
+    internal async Task WaitForMessagesAsync(int count, CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            lock (Written)
+            {
+                if (Written.Count >= count) return;
+            }
+
+            await Task.Delay(20, cancellationToken);
+        }
     }
 }

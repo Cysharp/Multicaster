@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Net.NetworkInformation;
+﻿using System.Net.NetworkInformation;
 using System.Net.Sockets;
 
 using Cysharp.Runtime.Multicast;
@@ -22,6 +21,10 @@ namespace Multicaster.Distributed.Redis.Tests;
 
 public class RedisGroupShardedTest : RedisGroupTestBase, IAsyncLifetime, IDisposable
 {
+    private const string KeyForShard1 = "quux"; // Slot 3850
+    private const string KeyForShard2 = "key1"; // Slot 9189
+    private const string KeyForShard3 = "foo"; // Slot 12182
+
     private readonly CancellationTokenSource _timeoutTokenSource = new(TimeSpan.FromSeconds(60));
     private CancellationToken TimeoutToken => _timeoutTokenSource.Token;
 
@@ -41,31 +44,25 @@ public class RedisGroupShardedTest : RedisGroupTestBase, IAsyncLifetime, IDispos
         // Start redis-cluster
         _redisClusterContainer = new ContainerBuilder()
             .WithImage(_redisClusterImage)
-            .WithWaitStrategy(Wait.ForUnixContainer().UntilCommandIsCompleted("redis-cli", "-p", "30001", "cluster", "info"))
-            .WithWaitStrategy(Wait.ForUnixContainer().UntilCommandIsCompleted("redis-cli", "-p", "30001", "ping"))
-            .WithWaitStrategy(Wait.ForUnixContainer().UntilCommandIsCompleted("redis-cli", "-p", "30002", "ping"))
-            .WithWaitStrategy(Wait.ForUnixContainer().UntilCommandIsCompleted("redis-cli", "-p", "30003", "ping"))
+            .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("Redis Cluster is ready."))
             .WithPortBinding(30001, 30001)
             .WithPortBinding(30002, 30002)
             .WithPortBinding(30003, 30003)
             .Build();
         await _redisClusterContainer.StartAsync(TimeoutToken);
-
-        // Wait for the cluster to be ready
-        await Task.Delay(TimeSpan.FromSeconds(5));
     }
 
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
-        if (_redisClusterImage is not null)
-        {
-            await _redisClusterImage.DisposeAsync();
-        }
-
         if (_redisClusterContainer is not null)
         {
             await _redisClusterContainer.DisposeAsync();
+        }
+
+        if (_redisClusterImage is not null)
+        {
+            await _redisClusterImage.DisposeAsync();
         }
 
         Dispose();
@@ -81,8 +78,12 @@ public class RedisGroupShardedTest : RedisGroupTestBase, IAsyncLifetime, IDispos
             .ToString();
     }
 
-    private string GetConnectionString()
-        => $"localhost:30001,$CLUSTER="; // Disable auto-discovery, we use sharded pub/sub
+    // Use the same loopback address that the cluster advertises.
+    private static string GetConnectionString()
+        => "127.0.0.1:30001";
+
+    private Task WaitForMessagesAsync(int count, params TestRemoteReceiverWriter[] writers)
+        => Task.WhenAll(writers.Select(writer => writer.WaitForMessagesAsync(count, TimeoutToken)));
 
     [Fact]
     public async Task ShardingServerConnectivityTest()
@@ -101,54 +102,26 @@ public class RedisGroupShardedTest : RedisGroupTestBase, IAsyncLifetime, IDispos
         // 2: 5461–10922
         // 3: 10923–16383
 
-        const string KeyForShard1 = "quux"; // 3850 -> Shard:1
-        const string KeyForShard2 = "bar";  // 5061 -> Shard:2
-        const string KeyForShard3 = "foo";  // 12182 -> Shard:3
-
-        var received = new ConcurrentQueue<string>();
-
         using var conn1 = await ConnectionMultiplexer.ConnectAsync(GetConnectionString());
-
-        await conn1.GetDatabase().SetAddAsync(KeyForShard1, "1Value");
-        await conn1.GetDatabase().SetAddAsync(KeyForShard2, "2Value");
-        await conn1.GetDatabase().SetAddAsync(KeyForShard3, "3Value");
-
-        var subscriber1 = conn1.GetSubscriber();
-        var channel1 = RedisChannel.Sharded(KeyForShard1);
-        var queue1 = await subscriber1.SubscribeAsync(channel1);
-        queue1.OnMessage(message =>
-        {
-            received.Enqueue(message.Message.ToString());
-        });
-
+        Assert.Equal(3, conn1.GetEndPoints().Length);
         using var conn2 = await ConnectionMultiplexer.ConnectAsync(GetConnectionString());
-        var subscriber2 = conn2.GetSubscriber();
-        var channel2 = RedisChannel.Sharded(KeyForShard2);
-        var queue2 = await subscriber2.SubscribeAsync(channel2);
-        queue2.OnMessage(message =>
-        {
-            received.Enqueue(message.Message.ToString());
-        });
-
         using var conn3 = await ConnectionMultiplexer.ConnectAsync(GetConnectionString());
+        var subscriber1 = conn1.GetSubscriber();
+        var subscriber2 = conn2.GetSubscriber();
         var subscriber3 = conn3.GetSubscriber();
+        var channel1 = RedisChannel.Sharded(KeyForShard1);
+        var channel2 = RedisChannel.Sharded(KeyForShard2);
         var channel3 = RedisChannel.Sharded(KeyForShard3);
+        var queue1 = await subscriber1.SubscribeAsync(channel1);
+        var queue2 = await subscriber2.SubscribeAsync(channel2);
         var queue3 = await subscriber3.SubscribeAsync(channel3);
-        queue3.OnMessage(message =>
-        {
-            received.Enqueue(message.Message.ToString());
-        });
 
-        await subscriber1.PublishAsync(channel3, "1->3");
-        await Task.Delay(100);
-        await subscriber2.PublishAsync(channel3, "2->3");
-        await Task.Delay(100);
-        await subscriber3.PublishAsync(channel2, "3->2");
-        await Task.Delay(100);
-        await subscriber3.PublishAsync(channel1, "3->1");
-        await Task.Delay(100);
-
-        Assert.Equal(received, ["1->3", "2->3", "3->2", "3->1"]);
+        Assert.Equal(1L, await subscriber1.PublishAsync(channel2, "1->2"));
+        Assert.Equal("1->2", (await queue2.ReadAsync(TimeoutToken)).Message.ToString());
+        Assert.Equal(1L, await subscriber2.PublishAsync(channel3, "2->3"));
+        Assert.Equal("2->3", (await queue3.ReadAsync(TimeoutToken)).Message.ToString());
+        Assert.Equal(1L, await subscriber3.PublishAsync(channel1, "3->1"));
+        Assert.Equal("3->1", (await queue1.ReadAsync(TimeoutToken)).Message.ToString());
     }
 
     [Fact]
@@ -174,10 +147,9 @@ public class RedisGroupShardedTest : RedisGroupTestBase, IAsyncLifetime, IDispos
         group2.Add(receiverD.Id, receiverD.Proxy);
 
         group.All.Parameter_One(1234);
+        await WaitForMessagesAsync(1, receiverA.Writer, receiverB.Writer, receiverC.Writer, receiverD.Writer);
         group2.All.Parameter_One(5678);
-
-        // We need to wait to receive the message from Redis.
-        await Task.Delay(100);
+        await WaitForMessagesAsync(2, receiverA.Writer, receiverB.Writer, receiverC.Writer, receiverD.Writer);
 
         // Assert
         Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5678])], receiverA.Writer.Written);
@@ -232,13 +204,11 @@ public class RedisGroupShardedTest : RedisGroupTestBase, IAsyncLifetime, IDispos
         group3.Add(receiverC.Id, receiverC.Proxy);
 
         group1.All.Parameter_One(1234);
-        await Task.Delay(100);
+        await WaitForMessagesAsync(1, receiverA.Writer, receiverB.Writer);
         group2.All.Parameter_One(5678);
-        await Task.Delay(100);
+        await WaitForMessagesAsync(1, receiverC.Writer, receiverD.Writer);
         group3.All.Parameter_One(91011);
-
-        // We need to wait to receive the message from Redis.
-        await Task.Delay(100);
+        await WaitForMessagesAsync(2, receiverA.Writer, receiverC.Writer);
 
         // Assert
         Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [91011])], receiverA.Writer.Written);
@@ -272,17 +242,17 @@ public class RedisGroupShardedTest : RedisGroupTestBase, IAsyncLifetime, IDispos
         var profSessionShard1 = new ProfilingSession();
         connShard1.RegisterProfiler(() => profSessionShard1);
         IMulticastGroupProvider groupProviderShard1 = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ChannelFactory = RedisChannelFactory.Sharded, ConnectionMultiplexer = connShard1 });
-        using var groupShard1 = groupProviderShard1.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
+        using var groupShard1 = groupProviderShard1.GetOrAddSynchronousGroup<Guid, ITestReceiver>($"MyGroup{{{KeyForShard1}}}");
         using var connShard2 = await ConnectionMultiplexer.ConnectAsync(GetConnectionString(), log: new DebugTextWriter());
         var profSessionShard2 = new ProfilingSession();
         connShard2.RegisterProfiler(() => profSessionShard2);
         IMulticastGroupProvider groupProviderShard2 = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ChannelFactory = RedisChannelFactory.Sharded, ConnectionMultiplexer = connShard2 });
-        using var groupShard2 = groupProviderShard2.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup_");
+        using var groupShard2 = groupProviderShard2.GetOrAddSynchronousGroup<Guid, ITestReceiver>($"MyGroup{{{KeyForShard2}}}");
         using var connShard3 = await ConnectionMultiplexer.ConnectAsync(GetConnectionString(), log: new DebugTextWriter());
         var profSessionShard3 = new ProfilingSession();
         connShard3.RegisterProfiler(() => profSessionShard3);
         IMulticastGroupProvider groupProviderShard3 = new RedisGroupProvider(proxyFactory, serializer, new RedisGroupOptions() { ChannelFactory = RedisChannelFactory.Sharded, ConnectionMultiplexer = connShard3});
-        using var groupShard3 = groupProviderShard3.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup__");
+        using var groupShard3 = groupProviderShard3.GetOrAddSynchronousGroup<Guid, ITestReceiver>($"MyGroup{{{KeyForShard3}}}");
 
         // Act
         // Shard1[A, B], Shard2[C, D], Shard3[A, C]
@@ -294,13 +264,11 @@ public class RedisGroupShardedTest : RedisGroupTestBase, IAsyncLifetime, IDispos
         groupShard3.Add(receiverC.Id, receiverC.Proxy);
 
         groupShard1.All.Parameter_One(1234);
-        await Task.Delay(100);
+        await WaitForMessagesAsync(1, receiverA.Writer, receiverB.Writer);
         groupShard2.All.Parameter_One(5678);
-        await Task.Delay(100);
+        await WaitForMessagesAsync(1, receiverC.Writer, receiverD.Writer);
         groupShard3.All.Parameter_One(91011);
-
-        // We need to wait to receive the message from Redis.
-        await Task.Delay(100);
+        await WaitForMessagesAsync(2, receiverA.Writer, receiverC.Writer);
 
         // Assert
         Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234]), CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [91011])], receiverA.Writer.Written);
