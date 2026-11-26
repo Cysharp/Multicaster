@@ -24,6 +24,30 @@ public class NatsGroupTest
         _natsContainer.StartAsync().GetAwaiter().GetResult();
     }
 
+    private async Task WaitForSubscriptionsAsync(string groupName, int expectedCount)
+    {
+        using var client = new HttpClient();
+        var server = new UriBuilder("http", _natsContainer.Hostname, _natsContainer.GetMappedPublicPort(NatsBuilder.NatsHttpManagementPort));
+        var endpoint = new Uri(server.Uri, "/connz?subs=1");
+        var subject = $"Multicaster.Group/{groupName}";
+
+        while (true)
+        {
+            using var data = JsonDocument.Parse(await client.GetStringAsync(endpoint, TimeoutToken));
+            var subscriptionCount = 0;
+            foreach (var connection in data.RootElement.GetProperty("connections").EnumerateArray())
+            {
+                if (connection.TryGetProperty("subscriptions_list", out var subscriptions))
+                {
+                    subscriptionCount += subscriptions.EnumerateArray().Count(subscription => subscription.ValueEquals(subject));
+                }
+            }
+
+            if (subscriptionCount == expectedCount) return;
+            await Task.Delay(20, TimeoutToken);
+        }
+    }
+
     private static string CreateJsonSerializedInvocation(string nameOfMethod, IReadOnlyList<object?> args)
         => CreateJsonSerializedInvocation(nameOfMethod, null, args);
     private static string CreateJsonSerializedInvocation(string nameOfMethod, Guid? messageId, IReadOnlyList<object?> args)
@@ -165,7 +189,7 @@ public class NatsGroupTest
         var receiverD = TestNatsReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
 
         IMulticastGroupProvider groupProvider = new NatsGroupProvider(proxyFactory, serializer, new NatsGroupOptions() { Url = _natsContainer.GetConnectionString() });
-        var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
+        using var group = groupProvider.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
         IMulticastGroupProvider groupProvider2 = new NatsGroupProvider(proxyFactory, serializer, new NatsGroupOptions() { Url = _natsContainer.GetConnectionString() });
         using var group2 = groupProvider2.GetOrAddSynchronousGroup<Guid, ITestReceiver>("MyGroup");
 
@@ -178,19 +202,24 @@ public class NatsGroupTest
         group2.Add(receiverD.Id, receiverD.Proxy);
 
         // Act
-        group.Remove(receiverC.Id); // Remove C on GroupProvider(2) via GroupProvider(1).
-        group2.Remove(receiverA.Id); // Remove A on GroupProvider(1) via GroupProvider(2).
-        await Task.Delay(100); // We need to wait to receive the message from NATS.
+        await WaitForSubscriptionsAsync("MyGroup", 2);
+
+        // Use the same connection for each removal and the broadcast that checks it.
+        group.Remove(receiverC.Id);
         group.All.Parameter_One(1234);
-        await Task.Delay(250); // Ensure order of transmission
+        await Task.WhenAll(receiverB.Writer.WaitForMessagesAsync(1, TimeoutToken), receiverD.Writer.WaitForMessagesAsync(1, TimeoutToken));
+
+        group2.Remove(receiverA.Id);
         group2.All.Parameter_One(5678);
-        await Task.Delay(100); // We need to wait to receive the message from NATS.
+        await Task.WhenAll(receiverB.Writer.WaitForMessagesAsync(2, TimeoutToken), receiverD.Writer.WaitForMessagesAsync(2, TimeoutToken));
+        group.Dispose();
+        group2.Dispose();
 
         // Assert
         // MyGroup
         //   - GroupProvider(1): B
         //   - GroupProvider(2): D
-        Assert.Equal([], receiverA.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234])], receiverA.Writer.Written);
         Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverB.Writer.Written);
         Assert.Equal([], receiverC.Writer.Written);
         Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverD.Writer.Written);
@@ -208,7 +237,7 @@ public class NatsGroupTest
         var receiverD = TestNatsReceiverHelper.CreateReceiverSet(proxyFactory, serializer);
 
         IMulticastGroupProvider groupProvider = new NatsGroupProvider(proxyFactory, serializer, new NatsGroupOptions() { Url = _natsContainer.GetConnectionString() });
-        var group = groupProvider.GetOrAddGroup<Guid, ITestReceiver>("MyGroup");
+        using var group = groupProvider.GetOrAddGroup<Guid, ITestReceiver>("MyGroup");
         IMulticastGroupProvider groupProvider2 = new NatsGroupProvider(proxyFactory, serializer, new NatsGroupOptions() { Url = _natsContainer.GetConnectionString() });
         using var group2 = groupProvider2.GetOrAddGroup<Guid, ITestReceiver>("MyGroup");
 
@@ -221,22 +250,23 @@ public class NatsGroupTest
         await group2.AddAsync(receiverD.Id, receiverD.Proxy);
 
         // Act
-        await group.RemoveAsync(receiverC.Id); // Remove C on GroupProvider(2) via GroupProvider(1).
-        await group2.RemoveAsync(receiverA.Id); // Remove A on GroupProvider(1) via GroupProvider(2).
-        
-        
-        await Task.Delay(100); // We need to wait to receive the message from NATS.
+        await WaitForSubscriptionsAsync("MyGroup", 2);
+
+        await group.RemoveAsync(receiverC.Id, TimeoutToken);
         group.All.Parameter_One(1234);
-        await Task.Delay(250); // Ensure order of transmission
+        await Task.WhenAll(receiverB.Writer.WaitForMessagesAsync(1, TimeoutToken), receiverD.Writer.WaitForMessagesAsync(1, TimeoutToken));
+
+        await group2.RemoveAsync(receiverA.Id, TimeoutToken);
         group2.All.Parameter_One(5678);
-        await Task.Delay(100); // We need to wait to receive the message from NATS.
+        await Task.WhenAll(receiverB.Writer.WaitForMessagesAsync(2, TimeoutToken), receiverD.Writer.WaitForMessagesAsync(2, TimeoutToken));
+        group.Dispose();
+        group2.Dispose();
 
         // Assert
         // MyGroup
         //   - GroupProvider(1): B
         //   - GroupProvider(2): D
-        if (receiverB.Writer.Written[0].Contains("5678")) System.Diagnostics.Debugger.Break();
-        Assert.Equal([], receiverA.Writer.Written);
+        Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234])], receiverA.Writer.Written);
         Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverB.Writer.Written);
         Assert.Equal([], receiverC.Writer.Written);
         Assert.Equal(["""{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[1234]}""", """{"MethodName":"Parameter_One","MethodId":1979862359,"MessageId":null,"Arguments":[5678]}"""], receiverD.Writer.Written);
@@ -676,12 +706,10 @@ public class NatsGroupTest
         {
             var group = groupProvider.GetOrAddSynchronousGroup<string, ITestReceiver>("MyGroup");
             group.Add(receiverA.Id.ToString(), receiverA.Proxy);
-            // Wait for subscriptions to be established.
-            await Task.Delay(250);
+            await WaitForSubscriptionsAsync("MyGroup", 1);
 
             group.All.Parameter_One(1234);
-            // We need to wait to receive the message from NATS.
-            await Task.Delay(250);
+            await receiverA.Writer.WaitForMessagesAsync(1, TimeoutToken);
 
             Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234])], receiverA.Writer.Written);
             Assert.Equal([], receiverB.Writer.Written);
@@ -690,15 +718,16 @@ public class NatsGroupTest
 
             // Dispose the group "MyGroup".
             group.Dispose();
+            await WaitForSubscriptionsAsync("MyGroup", 0);
         }
         {
             // Expect to recreate the group "MyGroup" after disposing.
             var group = groupProvider.GetOrAddSynchronousGroup<string, ITestReceiver>("MyGroup");
             group.Add(receiverB.Id.ToString(), receiverB.Proxy);
+            await WaitForSubscriptionsAsync("MyGroup", 1);
 
             group.All.Parameter_One(5678);
-            // We need to wait to receive the message from NATS.
-            await Task.Delay(250);
+            await receiverB.Writer.WaitForMessagesAsync(1, TimeoutToken);
 
             Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [1234])], receiverA.Writer.Written);
             Assert.Equal([CreateJsonSerializedInvocation(nameof(ITestReceiver.Parameter_One), [5678])], receiverB.Writer.Written);
